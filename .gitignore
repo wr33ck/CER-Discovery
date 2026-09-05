@@ -1,0 +1,13 @@
+# Run output — evidence packs contain client data, never commit
+output/
+*.cer-host.json
+!samples/hosts/*.cer-host.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# PowerShell / Node scratch
+*.log
+node_modules/
+__pycache__/

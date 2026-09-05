@@ -1,0 +1,399 @@
+{
+ "Meta": {
+  "Hostname": "WS-0102",
+  "FQDN": "WS-0102.corp.local",
+  "Domain": "corp.local",
+  "PartOfDomain": true,
+  "CollectedAt": "2026-09-05T20:00:00",
+  "RunAs": "NT AUTHORITY\\SYSTEM",
+  "PSVersion": "5.1.20348.2849",
+  "ScriptVersion": "1.0",
+  "IsAdmin": true
+ },
+ "System": {
+  "OS": "Windows 10",
+  "Version": "10.0.19045",
+  "Build": "10.0.19045.5011",
+  "EditionId": "Professional",
+  "ProductType": 1,
+  "InstallDate": "2022-03-01T00:00:00",
+  "LastBoot": "2026-08-31T20:00:00",
+  "UptimeDays": 5.2,
+  "Manufacturer": "Dell Inc.",
+  "Model": "Latitude 5540",
+  "Serial": "VMware-42",
+  "IsVirtual": false,
+  "IsLaptop": false,
+  "Support": {
+   "Family": "Windows 10",
+   "Supported": false,
+   "EndOfSupport": "14 Oct 2025",
+   "Note": ""
+  },
+  "IPv4": [
+   "10.0.0.5"
+  ]
+ },
+ "Patching": {
+  "LastHotfixDate": "2026-06-02T20:00:00",
+  "LastHotfixKB": "KB5063878",
+  "HotfixCount": 22,
+  "LastHotfixAgeDays": 95,
+  "ManagedBy": "Intune/MDM update policy",
+  "PendingReboot": {
+   "Cbs": false,
+   "Wu": false,
+   "FileRename": false,
+   "Any": false
+  },
+  "PendingUpdates": null,
+  "PendingUpdateTitles": []
+ },
+ "Agents": {
+  "EDR": [],
+  "AV": [
+   "Microsoft Defender Antivirus"
+  ],
+  "MDR": [],
+  "AppControl": [],
+  "RMM": [],
+  "Backup": [],
+  "RemoteTools": [
+   "AnyDesk"
+  ],
+  "Other": [],
+  "Detail": []
+ },
+ "Roles": {
+  "IsDomainController": false,
+  "HasSql": false,
+  "SqlInstances": [],
+  "HasIIS": false,
+  "HasExchange": false,
+  "ExchangeBuild": null,
+  "HasHyperV": false,
+  "HasADSync": false,
+  "HasVeeamBackupServer": false,
+  "HasCertSvc": false,
+  "HasDhcp": false,
+  "HasDns": false,
+  "HasNPS": false,
+  "HasWSUS": false,
+  "HasFileShares": false,
+  "SpoolerRunning": false,
+  "SharedPrinters": 0,
+  "IsRdsHost": false,
+  "HasWinRM": true
+ },
+ "Defender": {
+  "Present": true,
+  "AMRunningMode": "Normal",
+  "AntivirusEnabled": true,
+  "RealTimeProtectionEnabled": true,
+  "IsTamperProtected": true,
+  "SignatureAgeDays": 1,
+  "ASR": [
+   {
+    "Id": "d4f940ab-401b-4efc-aadc-ad5f3c50688a",
+    "Name": "d4f940ab-401b-4efc-aadc-ad5f3c50688a",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "3b576869-a4ec-4529-8536-b80a7769e899",
+    "Name": "3b576869-a4ec-4529-8536-b80a7769e899",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "75668c1f-73b5-4cf0-bb93-3ecf5cb7cc84",
+    "Name": "75668c1f-73b5-4cf0-bb93-3ecf5cb7cc84",
+    "Action": 2,
+    "ActionName": "Audit"
+   },
+   {
+    "Id": "7674ba52-37eb-4a4f-a9a1-f0f9a1619a2c",
+    "Name": "7674ba52-37eb-4a4f-a9a1-f0f9a1619a2c",
+    "Action": 2,
+    "ActionName": "Audit"
+   },
+   {
+    "Id": "9e6c4e1f-7d60-472f-ba1a-a39ef669e4b2",
+    "Name": "9e6c4e1f-7d60-472f-ba1a-a39ef669e4b2",
+    "Action": 2,
+    "ActionName": "Audit"
+   },
+   {
+    "Id": "d1e49aac-8f56-4280-b9ba-993a6d77406c",
+    "Name": "d1e49aac-8f56-4280-b9ba-993a6d77406c",
+    "Action": 2,
+    "ActionName": "Audit"
+   },
+   {
+    "Id": "5beb7efe-fd9a-4556-801d-275e5ffc04cc",
+    "Name": "5beb7efe-fd9a-4556-801d-275e5ffc04cc",
+    "Action": 2,
+    "ActionName": "Audit"
+   },
+   {
+    "Id": "be9ba2d9-53ea-4cdc-84e5-9b1eeee46550",
+    "Name": "be9ba2d9-53ea-4cdc-84e5-9b1eeee46550",
+    "Action": 2,
+    "ActionName": "Audit"
+   },
+   {
+    "Id": "92e97fa1-2edf-4476-bdd6-9dd0b4dddc7b",
+    "Name": "92e97fa1-2edf-4476-bdd6-9dd0b4dddc7b",
+    "Action": 2,
+    "ActionName": "Audit"
+   }
+  ],
+  "ASRBlockCount": 2,
+  "ASRAuditCount": 7
+ },
+ "Hardening": {
+  "SMB1Enabled": false,
+  "SMB1FeatureState": "Disabled",
+  "TLS10Server": "Disabled",
+  "TLS11Server": "Disabled",
+  "TLS12Server": "Enabled",
+  "RDPEnabled": true,
+  "RDPNLARequired": true,
+  "Firewall": {
+   "Domain": true,
+   "Private": true,
+   "Public": true
+  },
+  "FirewallAllProfilesOn": true,
+  "UAC": {
+   "EnableLUA": 1,
+   "ConsentPromptBehaviorAdmin": 5
+  },
+  "LmCompatibilityLevel": 5,
+  "LLMNRDisabled": true,
+  "WDigestUseLogonCredential": 0,
+  "AutoLogonConfigured": false,
+  "PowerShellV2": "Enabled",
+  "PSLogging": {
+   "ScriptBlock": false,
+   "Module": false,
+   "Transcription": false
+  },
+  "CmdLineAuditing": false,
+  "IE11Feature": "Enabled",
+  "LAPS": {
+   "WindowsLAPSPolicy": false,
+   "PolicySource": null,
+   "BackupDirectory": null,
+   "LegacyLAPS": false,
+   "Configured": false
+  },
+  "ScreenLock": {
+   "MachineInactivityTimeoutSecs": 900,
+   "UserPolicies": []
+  },
+  "USBStorage": {
+   "DenyAllRemovable": null,
+   "USBSTORStart": 3,
+   "RemovableDiskDenyWrite": null
+  },
+  "PointAndPrint": {
+   "RestrictDriverInstallationToAdministrators": 1,
+   "NoWarningNoElevationOnInstall": 0,
+   "UpdatePromptSettings": 0
+  },
+  "SecurityLogMaxMB": 196,
+  "DC": null
+ },
+ "Office": {
+  "Installed": {
+   "Version": "16.0.18025.20160",
+   "Channel": "monthly",
+   "Products": "O365ProPlusRetail"
+  },
+  "MachinePolicy": {
+   "_MacroRuntimeScanScope": null
+  },
+  "UserPolicies": [],
+  "MacroPolicyPresent": false
+ },
+ "Browsers": {
+  "Edge": {
+   "Installed": true,
+   "Version": "129.0.2792.52",
+   "PolicyCount": 14,
+   "ForceInstalledExtensions": [
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx"
+   ],
+   "KeySettings": {}
+  },
+  "Chrome": {
+   "Installed": true,
+   "Version": "128.0.6613.138",
+   "PolicyCount": 0,
+   "ForceInstalledExtensions": [],
+   "KeySettings": {}
+  },
+  "Firefox": {
+   "Installed": false,
+   "Version": null,
+   "PoliciesPresent": false
+  },
+  "JavaRuntimes": [
+   "1.8"
+  ]
+ },
+ "AppControl": {
+  "AppLocker": {
+   "Present": true,
+   "Collections": {
+    "Exe": {
+     "Enforcement": "AuditOnly",
+     "Rules": 12
+    },
+    "Script": {
+     "Enforcement": "AuditOnly",
+     "Rules": 5
+    }
+   },
+   "AppIDSvcRunning": true
+  },
+  "WDAC": {
+   "ActivePolicies": [],
+   "CodeIntegrityPolicyEnforcementStatus": 0,
+   "UsermodeCodeIntegrityPolicyEnforcementStatus": 0,
+   "Meaning": "Off",
+   "SIPolicyFilePresent": false
+  },
+  "ThirdParty": []
+ },
+ "LocalAccounts": {
+  "Administrators": [
+   {
+    "Name": "CORP\\Domain Admins",
+    "Type": "Group",
+    "Source": "ActiveDirectory"
+   }
+  ],
+  "AdminCount": 1,
+  "NonStandardAdmins": [],
+  "NonStandardAdminCount": 0,
+  "BuiltinAdminEnabled": true,
+  "BuiltinAdminName": "Administrator",
+  "BuiltinAdminPasswordAgeDays": 400,
+  "GuestEnabled": false,
+  "OtherEnabledLocalUsers": []
+ },
+ "Encryption": {
+  "BitLockerAvailable": true,
+  "Volumes": [
+   {
+    "Mount": "C:",
+    "Type": "OperatingSystem",
+    "ProtectionStatus": "Off",
+    "VolumeStatus": "FullyDecrypted",
+    "EncryptionMethod": "XtsAes256",
+    "EncryptionPercentage": 0,
+    "KeyProtectors": []
+   }
+  ],
+  "OSVolumeProtected": false,
+  "OSVolumeHasRecoveryPassword": false,
+  "RecoveryKeyEscrow": "n/a"
+ },
+ "Network": {
+  "Adapters": [],
+  "NetBIOS": [],
+  "ListeningPorts": [
+   {
+    "Port": 135,
+    "Process": "svchost"
+   },
+   {
+    "Port": 445,
+    "Process": "System"
+   },
+   {
+    "Port": 3389,
+    "Process": "svchost"
+   }
+  ],
+  "RiskyListeners": [
+   {
+    "Port": 135,
+    "Process": "svchost"
+   },
+   {
+    "Port": 445,
+    "Process": "System"
+   },
+   {
+    "Port": 3389,
+    "Process": "svchost"
+   }
+  ],
+  "TimeSource": "dc01.corp.local",
+  "TimeSyncType": "NT5DS",
+  "TimeSourceIsLocalClock": false,
+  "WinRMRunning": true
+ },
+ "Storage": {
+  "Volumes": [
+   {
+    "Drive": "C:",
+    "SizeGB": 256,
+    "FreeGB": 100,
+    "FreePct": 39
+   }
+  ],
+  "LowSpaceVolumes": [],
+  "Shares": [],
+  "BroadWriteShares": []
+ },
+ "Certificates": {
+  "Count": 0,
+  "ExpiringOrExpired": [],
+  "All": []
+ },
+ "Software": {
+  "Count": 60,
+  "Watchlist": [
+   {
+    "Name": "Java 8 Update 202",
+    "Version": "8.0.2020.8",
+    "Publisher": "Oracle",
+    "Flag": "Info",
+    "Note": "Java runtime present"
+   },
+   {
+    "Name": "Adobe Flash Player 32 NPAPI",
+    "Version": "32.0.0.465",
+    "Publisher": "Adobe",
+    "Flag": "Attention",
+    "Note": "Adobe Flash Player - end of life, must be removed (E8 PA ML1)"
+   },
+   {
+    "Name": "AnyDesk",
+    "Version": "8.0.10",
+    "Publisher": "AnyDesk",
+    "Flag": "Attention",
+    "Note": "Remote access tool - approved vendor path? (SEC-12; block via app control if unsanctioned)"
+   }
+  ],
+  "RemoteTools": [
+   "AnyDesk"
+  ],
+  "DotNetRelease": 533320,
+  "DotNetVersion": "4.8.09032",
+  "Browsers": [
+   "Microsoft Edge 129.0.2792.52"
+  ],
+  "All": []
+ },
+ "Events": {
+  "FailedLogons24h": 3,
+  "SecurityLogCleared90d": 0,
+  "UnexpectedShutdowns30d": 0
+ },
+ "Errors": []
+}

@@ -1,0 +1,1922 @@
+[
+ {
+  "id": "IAM-01",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Identity architecture documented and healthy (cloud-only / hybrid; Entra Connect or Cloud Sync; sync status)",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "AD",
+   "Servers"
+  ],
+  "gives": "Sync type, last sync time, sync features, sync server name (from Sync_ account / MSOL_ description / ADSync service).",
+  "manual": "Entra Connect Health (if licensed) for sync errors; record posture in STACK.md.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-02",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "MFA enforced for all users via Conditional Access (not legacy per-user MFA); registration coverage",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "CA policy requiring MFA for all users/apps, Security Defaults state, MFA registration % (members and admins), single-factor interactive sign-ins (P1).",
+  "manual": "Review the exclusion lists of the MFA policy in the Entra portal.",
+  "e8": [
+   "MFA"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-03",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Strong / phishing-resistant MFA for privileged users; weak methods (SMS/voice) disabled; number matching on",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Admin CA policies with authentication strength, SMS/voice method state, number matching, FIDO2/TAP state, admins passwordless-capable.",
+  "manual": "-",
+  "e8": [
+   "MFA"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "IAM-04",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Legacy authentication blocked (CA block policy; basic auth off in Exchange Online)",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "Exchange"
+  ],
+  "gives": "CA legacy-auth block policy, Security Defaults, successful legacy sign-ins last 7 days (P1), SMTP AUTH org setting, EXO authentication policies, CAS plan IMAP/POP defaults.",
+  "manual": "Without P1: Entra portal > Sign-in logs filtered by legacy client apps.",
+  "e8": [
+   "MFA"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-05",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Privileged role hygiene: Global Admin count 2-4, dedicated cloud-only admin accounts, least-privilege roles, PIM/JIT where licensed",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "AD"
+  ],
+  "gives": "Global Admin count and names, privileged users with licence/mailbox, synced admins, guest admins, service principals in roles, PIM eligible count (P2); on-prem Domain Admins for cross-check.",
+  "manual": "-",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-06",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Break-glass accounts: two exist, cloud-only, excluded from CA, credentials vaulted, sign-in alert configured",
+  "auto": "Partial",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Accounts excluded from every all-user CA policy (break-glass candidates).",
+  "manual": "Vault entry (client vault / CyberArk), sign-in alert rule (Sentinel/Log Analytics/Huntress), last test date (LOG.md).",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "IAM-07",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Partner access is GDAP (not DAP) with least-privilege roles; bA access via Lighthouse named admin accounts; no shared customer admin accounts in CyberArk",
+  "auto": "Partial",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Partner-style principals (Partner Tier2 Support, Directory Synchronization Accounts) in customer roles.",
+  "manual": "M365 Lighthouse > Tenants > GDAP relationship, roles and expiry; Partner Center for residual DAP; CyberArk safe review for shared customer admin accounts.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-08",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Guest and external identity governance: stale guests removed, collaboration settings restricted, access reviews where licensed",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Guest count, inactive guests, who can invite, guest role, cross-tenant default inbound setting.",
+  "manual": "Access review configuration (Entra > Identity Governance) if P2.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "IAM-09",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Account lifecycle: stale users/computers disabled, JML (joiner-mover-leaver) process defined, service accounts inventoried with owners",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "AD"
+  ],
+  "gives": "Stale enabled users (cloud and AD), stale computers, password-never-expires, password-not-required, service-account-like accounts, gMSA count.",
+  "manual": "JML process document (SNOW KB) and owner list for service accounts.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-10",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "On-prem AD DS health (if hybrid): supported DC OS, replication clean, FSMO/DNS sane, KRBTGT rotated, recycle bin on, legacy protocols disabled",
+  "auto": "Full",
+  "collectors": [
+   "AD",
+   "Servers",
+   "Endpoints"
+  ],
+  "gives": "DC OS support, replication health, FSMO, recycle bin, KRBTGT age, SYSVOL type, kerberoastable/AS-REP/DES/SIDHistory/unconstrained delegation, DC SMBv1/LDAP signing/channel binding/NTLM level.",
+  "manual": "-",
+  "e8": [
+   "RAP",
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-11",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Credential policy: Entra Password Protection (incl. on-prem agent), sensible expiry policy, Windows LAPS for local admin passwords",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "AD",
+   "Servers",
+   "Endpoints"
+  ],
+  "gives": "Entra Password Protection settings, default and fine-grained AD password policies, LAPS coverage (Entra-backed and AD-backed), LAPS policy on hosts.",
+  "manual": "-",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "IAM-12",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Conditional Access baseline: compliant/hybrid-joined device for corporate apps, unsupported platforms blocked, session controls for unmanaged devices, named locations",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "CA baseline: compliant/hybrid device, platform block, session controls, location blocks, named locations.",
+  "manual": "-",
+  "e8": [
+   "MFA"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "IAM-13",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "Identity Protection / risky sign-in handling (P2): risk policies enabled, risky users remediated, alerts routed to MDR/SOC",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Risk-based CA policies, risky users and 30-day detections (P2). Reports 'not licensed' when P2 is absent.",
+  "manual": "-",
+  "e8": [
+   "MFA"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "IAM-14",
+  "dom": "IAM",
+  "domain": "Identity & Access",
+  "control": "SaaS SSO coverage and app consent governance: key apps behind Entra SSO; user consent to unverified apps blocked; admin consent workflow",
+  "auto": "Partial",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "User consent setting, admin consent workflow, user-consented OAuth grants, app registration rights.",
+  "manual": "SSO coverage of the client's key SaaS: compare Enterprise applications list with the client's SaaS register (AZ-08).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "M365-01",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Tenant baseline: Microsoft Secure Score tracked, top actions actioned or formally risk-accepted, quarterly M365 Health Report top-3 closed",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Secure Score %, 90-day trend, largest improvement actions and category gaps.",
+  "manual": "Status of last quarter's top-3 (LOG.md / last quarterly report).",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "M365-02",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Email authentication: SPF (single record, < 10 lookups, -all), DKIM on all sending domains and third-party senders, DMARC at quarantine/reject with reporting",
+  "auto": "Full",
+  "collectors": [
+   "DNS",
+   "Exchange"
+  ],
+  "gives": "Per domain: MX/gateway, SPF (records, all-mechanism, lookup count), DKIM selectors live, DMARC policy/pct/rua, MTA-STS/TLS-RPT; EXO DKIM enabled per domain; parked-domain check.",
+  "manual": "DMARC aggregate report review (dmarcian/Mimecast); Mimecast DKIM selectors if not in the default selector list.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "M365-03",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Inbound mail protection: Mimecast or Defender for Office 365 with impersonation/anti-phish, Safe Links/Attachments (or URL Protect/Attachment Protect), connectors locked to the gateway",
+  "auto": "Full",
+  "collectors": [
+   "Exchange",
+   "DNS"
+  ],
+  "gives": "Preset security policies, anti-phish impersonation/mailbox intelligence, Safe Links/Attachments, malware/spam policies, inbound partner connector lock-down, gateway detection from MX/connectors.",
+  "manual": "Mimecast policy configuration (Mimecast console).",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "M365-04",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Mailbox hygiene: external auto-forwarding blocked, forwarding report clean, mailbox auditing on, shared mailboxes sign-in blocked, inactive licensed mailboxes reviewed",
+  "auto": "Full",
+  "collectors": [
+   "Exchange",
+   "Entra"
+  ],
+  "gives": "Auto-forward settings (policy, remote domains, transport rules), mailbox forwarding to external domains, shared mailboxes with sign-in enabled, inactive mailboxes, audit state, SCL-bypass rules.",
+  "manual": "Inbox rules per mailbox unless run with -CheckInboxRules.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "M365-05",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Exchange on-prem residual: no Exchange 2016/2019 (EoS 14 Oct 2025) - migrated to Exchange SE or removed; last-Exchange-server for recipient management handled",
+  "auto": "Full",
+  "collectors": [
+   "AD",
+   "Exchange",
+   "DNS",
+   "Servers"
+  ],
+  "gives": "Exchange server objects and versions in AD, hybrid objects in EXO, autodiscover/MX pointing on-prem, Exchange binaries on hosts.",
+  "manual": "-",
+  "e8": [
+   "PA",
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "M365-06",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "SharePoint/OneDrive sharing: external sharing scoped, Anyone links off or expiring, default link type internal, unmanaged-device session controls, guest expiry",
+  "auto": "Partial",
+  "collectors": [
+   "Entra",
+   "Exchange"
+  ],
+  "gives": "Tenant sharing capability, external resharing, domain restriction, legacy auth protocols, idle session sign-out, unmanaged sync restriction; OWA third-party storage.",
+  "manual": "SPO shell (Get-SPOTenant): RequireAnonymousLinksExpireInDays, DefaultSharingLinkType, ConditionalAccessPolicy; guest expiry; sensitivity labels on sites.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "M365-07",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Teams governance: external access/federation and guest access deliberate, meeting policies (anonymous join, lobby), third-party app policies, team sprawl managed",
+  "auto": "Full",
+  "collectors": [
+   "Teams"
+  ],
+  "gives": "Federation/allowed domains, consumer access, guest access, meeting anonymous join/lobby, app permission policy, third-party storage in Teams.",
+  "manual": "Teams admin centre if the MicrosoftTeams module is not installed; team creation governance.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "M365-08",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Data protection: retention policies for Exchange/SharePoint/Teams, DLP baseline (AU PII/TFN/credit card), sensitivity labels where licensed, audit log retention",
+  "auto": "Full",
+  "collectors": [
+   "Exchange"
+  ],
+  "gives": "Retention policies and scope, DLP policies and mode, sensitivity/retention labels and policies, litigation holds, archives.",
+  "manual": "Audit log retention policies (E5), mapping to the client's legal obligations.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "M365-09",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Microsoft 365 backup (third-party) covering Exchange, SharePoint, OneDrive and Teams; coverage %, last job success, restore tested",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "M365 backup console (Veeam for M365 / Datto SaaS / AvePoint): coverage, last job, retention, restore test; BAMS backup line items in eFO.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "M365-10",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Licensing fit: SKU inventory vs assigned vs active; unused licences; security features licensed but not deployed (P1/P2, Defender for Endpoint, Intune, Purview)",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "Exchange"
+  ],
+  "gives": "SKU purchased vs assigned, unassigned paid seats, entitlement detection (P1/P2/Intune/Defender/Purview), licensed accounts with no sign-in, licensed shared mailboxes, inactive mailboxes.",
+  "manual": "Active-usage reports (M365 admin centre > Usage); NCE renewal dates (eFO).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "M365-11",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Service health and Message Centre monitored; upcoming retirements/breaking changes tracked in LOG.md",
+  "auto": "Partial",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Message centre 'Plan for change' items last 90 days, major changes, action-required dates.",
+  "manual": "Named owner; track relevant items in LOG.md.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "M365-12",
+  "dom": "M365",
+  "domain": "Microsoft 365 & Email Security",
+  "control": "Alert routing: security/compliance alerts and tenant notifications go to a monitored mailbox or MDR (Huntress ITDR / Rapid7), technical contact current",
+  "auto": "Partial",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Tenant technical/security notification addresses; count of untriaged Defender alerts.",
+  "manual": "Defender portal > Settings > Email notifications recipients; Huntress/Rapid7 M365 connector health.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-01",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Device inventory and management coverage: every workstation/laptop/mobile enrolled in Intune (or GPO/ConfigMgr) and in RMM; unmanaged device count",
+  "auto": "Full",
+  "collectors": [
+   "Intune",
+   "Entra",
+   "Servers",
+   "Endpoints",
+   "AD"
+  ],
+  "gives": "Intune device count/OS/stale/personal, Entra device count/trust/managed/compliant, host-check counts, AD computer objects.",
+  "manual": "EDR console device count; HR headcount (PROFILE) for the reconciliation.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-02",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "OS currency: Windows 11 only (Windows 10 EoS 14 Oct 2025; ESU only as documented exception), macOS n/n-1, feature update rings defined",
+  "auto": "Full",
+  "collectors": [
+   "Intune",
+   "Entra",
+   "AD",
+   "Endpoints",
+   "Servers"
+  ],
+  "gives": "Windows 10 vs 11 counts from every source, build distribution, feature-update policies.",
+  "manual": "-",
+  "e8": [
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "END-03",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "OS patch compliance: workstations patched within 1 month (E8 ML1), critical/exploited within 48 h where internet-facing; reboot compliance; reporting",
+  "auto": "Full",
+  "collectors": [
+   "Intune",
+   "Endpoints"
+  ],
+  "gives": "Update rings and deferrals, host last-patch age distribution, pending reboots, live WU scan (optional).",
+  "manual": "Exact compliance % vs SLA: Intune update reports / N-Central patch report.",
+  "e8": [
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-04",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Third-party application patching: browsers, Office/M365 Apps, PDF, Java, collaboration clients patched within 2 weeks (E8 PA ML1); unsupported apps removed",
+  "auto": "Partial",
+  "collectors": [
+   "Endpoints",
+   "Servers",
+   "Intune"
+  ],
+  "gives": "Known-vulnerable/EoL versions on hosts (7-Zip, WinRAR, PuTTY, Flash, Java, Office perpetual), browser versions, Intune detected apps watchlist.",
+  "manual": "N-Central / NinjaOne third-party patch compliance report; Intune Enterprise App Management coverage.",
+  "e8": [
+   "PA"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-05",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Endpoint vulnerability scanning: Defender Vulnerability Management or Rapid7 IVM agent on all devices; cadence per E8 ML1; critical findings aged < 30 days",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Defender Vulnerability Management dashboard (security.microsoft.com) or Rapid7 InsightVM: agent coverage, scan cadence, exploited criticals > 30 days.",
+  "e8": [
+   "PA",
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "END-06",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "EDR/AV coverage and health: Trend / CrowdStrike / Defender for Endpoint on 100% of devices, sensors healthy (reported <= 7 days), tamper protection on, Huntress agent alongside",
+  "auto": "Full",
+  "collectors": [
+   "Endpoints",
+   "Servers"
+  ],
+  "gives": "EDR/AV product per host, hosts with none, Defender mode/tamper protection/signature age.",
+  "manual": "EDR console inactive sensors; Huntress portal agent list; alert routing confirmation.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-07",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Disk encryption: BitLocker enforced with recovery keys escrowed to Entra/Intune (or AD); FileVault on macOS; compliance report",
+  "auto": "Full",
+  "collectors": [
+   "Intune",
+   "Entra",
+   "Endpoints"
+  ],
+  "gives": "Intune isEncrypted %, BitLocker recovery keys escrowed to Entra, OS-volume protection and recovery protector on hosts, encryption policies.",
+  "manual": "-",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-08",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Local administrator restriction: users are not local admins; Windows LAPS on every device; documented elevation path (EPM / RMM / temporary)",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "Intune",
+   "AD",
+   "Endpoints",
+   "Servers"
+  ],
+  "gives": "Entra LAPS coverage, Intune LAPS policy, AD LAPS attributes, non-standard local admins per host, built-in admin state/password age.",
+  "manual": "Elevation request process (EPM/RMM) documentation.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "END-09",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Application control on workstations (Airlock / WDAC / AppLocker): executables, scripts, installers, DLLs, HTA/CHM/CPL restricted; user profile and temp paths covered (E8 AC ML1)",
+  "auto": "Full",
+  "collectors": [
+   "Endpoints",
+   "Intune"
+  ],
+  "gives": "AppLocker enforcement per collection, WDAC enforcement status and active policies, Airlock/ThreatLocker agent presence, Intune app-control policies.",
+  "manual": "Airlock portal: enforcement mode per group, blocked-event review, exception process.",
+  "e8": [
+   "AC"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "END-10",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Microsoft Office macros: blocked from the internet, disabled for users without business need, AV scanning on, settings locked (E8 MAC ML1); Win32 API calls blocked (ML2)",
+  "auto": "Full",
+  "collectors": [
+   "Endpoints",
+   "Intune"
+  ],
+  "gives": "Per-host macro policy (VBAWarnings, block-from-internet, AMSI scope), ASR Win32 macro rule, Intune settings-catalog/ADMX macro settings.",
+  "manual": "-",
+  "e8": [
+   "MAC"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "END-11",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "User application hardening: browser hardening (no Java/ads from internet, settings locked), IE11 removed, ASR rules for Office/PDF child processes and injection, PowerShell v2 removed, script block/command-line logging (E8 UAH ML1/ML2)",
+  "auto": "Full",
+  "collectors": [
+   "Endpoints",
+   "Intune"
+  ],
+  "gives": "ASR rule states (host and policy), IE11 feature, PowerShell v2, script-block/command-line logging, LLMNR, Java, browser policies and force-installed extensions, Edge/Chrome versions.",
+  "manual": "OLE package activation and PDF hardening specifics (E8 ML2) if not visible in policy names.",
+  "e8": [
+   "UAH"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "END-12",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Compliance policies integrated with Conditional Access: encryption, AV, firewall, OS minimum, Defender risk score; non-compliant device count and grace periods",
+  "auto": "Full",
+  "collectors": [
+   "Intune",
+   "Entra"
+  ],
+  "gives": "Compliance policies and settings, non-compliant device %, CA policies requiring compliance.",
+  "manual": "-",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "END-13",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Provisioning and SOE: Autopilot registration for new devices, baseline profile documented, naming standard, Autopilot & Intune best-practice checklist applied",
+  "auto": "Full",
+  "collectors": [
+   "Intune"
+  ],
+  "gives": "Autopilot profiles/assignments, registered devices, ESP, ADMX profile count, autopilot-enrolled %.",
+  "manual": "SOE document currency (SNOW KB / SharePoint); bA Autopilot & Intune checklist deviations.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "END-14",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Mobile devices: iOS/Android access controlled by MAM/app protection (or MDM), PIN/biometric, selective wipe tested, BYOD stance documented",
+  "auto": "Full",
+  "collectors": [
+   "Intune",
+   "Entra",
+   "Exchange"
+  ],
+  "gives": "App protection policies (iOS/Android/Windows, PIN, save-as), mobile devices under MDM, enrolment restrictions, CA app-protection policy, Exchange mobile policy.",
+  "manual": "BYOD stance document.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "END-15",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Peripheral and host controls: USB removable storage policy, Windows Firewall enforced on all profiles, screen lock <= 15 min, printer driver policy (Point and Print restrictions)",
+  "auto": "Full",
+  "collectors": [
+   "Endpoints",
+   "Intune"
+  ],
+  "gives": "Firewall profiles, screen lock, removable storage, Point and Print, AutoLogon on hosts; Intune restriction/settings-catalog equivalents.",
+  "manual": "-",
+  "e8": [
+   "UAH"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "END-16",
+  "dom": "END",
+  "domain": "Endpoint",
+  "control": "Endpoint lifecycle: device age, warranty status, Windows 11 ineligible units, refresh plan and budget signalled to SDM/CAM",
+  "auto": "Partial",
+  "collectors": [
+   "Endpoints",
+   "Intune"
+  ],
+  "gives": "Manufacturer/model/serial per host (hosts.csv), Intune models.",
+  "manual": "Warranty lookups by serial (Dell/HP), purchase dates, refresh plan (LIC-01 register).",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "SRV-01",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Server inventory accurate across SNOW CIs, eFO, Orion and vCenter/emPOWER: counts match, IP/NAT IP present, role and owner documented",
+  "auto": "Partial",
+  "collectors": [
+   "AD",
+   "Servers",
+   "Azure",
+   "vSphere",
+   "Veeam"
+  ],
+  "gives": "Server lists from AD (active 60 days), reachable hosts, Azure VMs, vCenter VMs, Veeam inventory - one side of the reconciliation.",
+  "manual": "SNOW CI export, eFO Cloud Services, Orion node list to diff against; raise CI corrections.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "SRV-02",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Server OS support status: no Windows Server 2012/2012 R2 (ESU ends Oct 2026), Server 2016 plan (EoS 12 Jan 2027), Server 2022 mainstream ends 13 Oct 2026; Linux distros in support",
+  "auto": "Full",
+  "collectors": [
+   "AD",
+   "Servers",
+   "Azure",
+   "vSphere"
+  ],
+  "gives": "OS families with support status and EoS dates from every source; legacy guests in vSphere.",
+  "manual": "-",
+  "e8": [
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "SRV-03",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Server patch compliance: monthly cadence within 1 month (E8 ML1), internet-facing within 48 h for critical/exploited; maintenance windows agreed; failed/pending reboots",
+  "auto": "Full",
+  "collectors": [
+   "Servers",
+   "Azure"
+  ],
+  "gives": "Last-patch age, pending reboots, uptime, update source per server; Azure Update Manager assessment.",
+  "manual": "N-Central patch status per server; maintenance windows (STACK.md).",
+  "e8": [
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "SRV-04",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Server hardening baseline: CIS/Microsoft baseline, SMBv1 off, TLS 1.0/1.1 off, RDP not internet-exposed + NLA, EDR on servers, unnecessary roles removed, application control on internet-facing servers (E8 ML2)",
+  "auto": "Full",
+  "collectors": [
+   "Servers"
+  ],
+  "gives": "SMBv1, TLS 1.0/1.1, RDP NLA, firewall profiles, WDigest, NTLM level, UAC, spooler, EDR on servers, application control on servers, listeners.",
+  "manual": "Internet exposure of RDP (firewall NAT - see FortiGate NET-04); CIS baseline evidence.",
+  "e8": [
+   "AC",
+   "RAP"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SRV-05",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Privileged access to servers: admin via jump host/RDM with CyberArk-sourced credentials, no direct RDP from user VLAN, tiered admin accounts, gMSA/managed service accounts",
+  "auto": "Full",
+  "collectors": [
+   "AD",
+   "Servers"
+  ],
+  "gives": "Domain/Enterprise/Schema Admins and operator groups, Protected Users, non-standard local admins on servers.",
+  "manual": "Jump-host enforcement (firewall rule user VLAN -> RDP), CyberArk/RDM usage.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SRV-06",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Hypervisor platform health: vSphere/Hyper-V version in support (vSphere 7 end of general support was 2 Oct 2025), host firmware currency, HA/DRS configured, N+1 capacity, datastore free >= 20%, stale snapshots, VMware licensing status post-Broadcom",
+  "auto": "Full",
+  "collectors": [
+   "vSphere",
+   "Servers"
+  ],
+  "gives": "vCenter/host versions, HA/DRS, datastore free %, stale snapshots, tools status, licences; virtual %/tools via host check when PowerCLI absent.",
+  "manual": "emPOWER VCD/vCenter for hosted platforms; Hyper-V manually; VMware subscription status (Broadcom portal).",
+  "e8": [
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "SRV-07",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Capacity and performance: CPU/RAM/storage headroom and 12-month growth trend; over/under-provisioned VMs; storage latency alerts",
+  "auto": "Partial",
+  "collectors": [
+   "vSphere",
+   "Servers",
+   "Azure"
+  ],
+  "gives": "Current cluster CPU/memory utilisation, >= 8 vCPU VMs, low-space volumes, Advisor right-sizing.",
+  "manual": "90-day trends and forecast: Orion capacity reports / vCenter performance charts.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SRV-08",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "File services: share permissions (no Everyone/Authenticated Users modify), DFS-N/DFS-R health, quotas/FSRM, migration candidates to SharePoint/Azure Files",
+  "auto": "Partial",
+  "collectors": [
+   "Servers"
+  ],
+  "gives": "Non-admin shares per server and share-level ACLs granting Change/Full to Everyone/Authenticated Users/Domain Users.",
+  "manual": "NTFS ACL audit of top-level folders; DFS-R health (dfsrdiag / Get-DfsrState); SharePoint Migration Assessment.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SRV-09",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Database and application servers: SQL versions in support (SQL 2014 and 2016 are out of support - 9 Jul 2024 and 14 Jul 2026; ESU only), backups (full + log) and recovery model, application owners and vendor support contracts documented",
+  "auto": "Full",
+  "collectors": [
+   "Servers",
+   "AD",
+   "Veeam"
+  ],
+  "gives": "SQL instances/versions/editions with support status, hosts advertising SQL SPNs, Veeam application-aware processing.",
+  "manual": "Recovery model vs backup type (SQL query); LoB vendor support contracts.",
+  "e8": [
+   "PO",
+   "RB"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "SRV-10",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Certificates and PKI: internal CA health (CRL/AIA publishing, CA OS support), certificate expiry inventory, public cert automation plan (public TLS max lifetime 200 days since 15 Mar 2026, 100 days from Mar 2027, 47 days from Mar 2029 - CA/B Forum SC-081)",
+  "auto": "Full",
+  "collectors": [
+   "Servers",
+   "AD",
+   "DNS"
+  ],
+  "gives": "Expiring/expired certificates with private keys on servers, enterprise CAs and hosts, CAA records.",
+  "manual": "pkiview.msc / certutil -URL for CRL/AIA health; GeoCerts inventory; ACME automation plan.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SRV-11",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Core services: NTP hierarchy, DNS (scavenging, forwarders not ISP, split-brain documented), DHCP failover and scope utilisation",
+  "auto": "Full",
+  "collectors": [
+   "AD",
+   "Servers"
+  ],
+  "gives": "DNS scavenging/aging/forwarders, DHCP scopes utilisation/failover, PDC and member-server time sources.",
+  "manual": "-",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "SRV-12",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Print, RDS/Citrix/RAS and legacy services: print server hardening (Point and Print), RDS/VDI farm health and CAL licensing, legacy runtimes (.NET, Java) on supported versions",
+  "auto": "Full",
+  "collectors": [
+   "Servers",
+   "AD"
+  ],
+  "gives": "Print servers and Point-and-Print restriction, spooler on non-print servers, RDS hosts, IIS, .NET below 4.8.",
+  "manual": "RDS CAL counts (RD Licensing Manager); RAS/Citrix farm versions.",
+  "e8": [
+   "PA"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SRV-13",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Linux estate: distro support status, automated patching (unattended-upgrades/dnf-automatic/Ansible), SSH hardening (key-only, no root), monitoring and backup agents, domain integration (SSSD) if applicable",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Linux hosts are not covered by the Windows host check: over SSH check /etc/os-release, unattended-upgrades/dnf-automatic, sshd_config (PermitRootLogin, PasswordAuthentication), monitoring/backup agents.",
+  "e8": [
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "NET-01",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Network documentation current: L3 diagram (< 12 months), VLAN/IP schema in Netbox, WAN/ISP circuits and carrier contacts recorded",
+  "auto": "Partial",
+  "collectors": [
+   "AD"
+  ],
+  "gives": "AD sites and subnet count for comparison with the diagram.",
+  "manual": "SharePoint diagram revision date; Netbox prefixes vs live config; circuit register.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "NET-02",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Firewall platform: model in support, FortiOS on a recommended mature branch (per PSIRT), HA pair, config backed up in FortiManager, management not internet-exposed, individual admin accounts, MFA",
+  "auto": "Full",
+  "collectors": [
+   "FortiGate"
+  ],
+  "gives": "Model/serial/firmware, newer patches in branch, HA mode/peers, admin trusted hosts and 2FA, management on WAN, admin port/timeout, FortiAnalyzer/syslog, licences.",
+  "manual": "PSIRT comparison for the running build; FortiManager config backup status; model end-of-support (Fortinet product life cycle).",
+  "e8": [
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "NET-03",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Firewall policy hygiene: no any/any, unused rules (zero hits > 90 days) removed, logging on all policies, security profiles (IPS/AV/web filter/app control/DNS filter) on internet-bound policies, geo-blocking",
+  "auto": "Full",
+  "collectors": [
+   "FortiGate"
+  ],
+  "gives": "Policy table: any/any, logging disabled, internet-bound policies without UTM profiles, zero-hit policies, geo usage.",
+  "manual": "SSL inspection posture; FortiAnalyzer 90-day hit history if live counters were reset.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "NET-04",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Internet-facing exposure: external scan of all public IPs; every open port justified; no RDP/SMB/database exposed; SSL-VPN tunnel mode (removed in FortiOS 7.6.3) migrated to IPsec (TCP/443 option) or ZTNA",
+  "auto": "Partial",
+  "collectors": [
+   "FortiGate",
+   "Azure",
+   "Servers"
+  ],
+  "gives": "WAN-sourced accept policies and risky published services, Azure NSG exposure and public IPs, internal listeners.",
+  "manual": "External scan of all public IPs (Rapid7 InsightVM external / LionGard / Shodan).",
+  "e8": [
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "NET-05",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Remote access: VPN/ZTNA requires MFA (SAML/Entra), device posture checks, split-tunnel policy documented, contractor access segregated and time-bound",
+  "auto": "Full",
+  "collectors": [
+   "FortiGate"
+  ],
+  "gives": "SSL-VPN state/port, IPsec dial-up and site-to-site, SAML/LDAP/RADIUS sources, local users and FortiToken 2FA.",
+  "manual": "Entra enterprise app claims for VPN SAML; contractor group membership/expiry.",
+  "e8": [
+   "MFA"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "NET-06",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Segmentation: user/server/guest/IoT-OT/voice/management VLANs separated by policy; guest wireless isolated; printers, cameras, BMS not on user VLAN",
+  "auto": "Partial",
+  "collectors": [
+   "FortiGate"
+  ],
+  "gives": "Interfaces referenced by policies and count of inter-VLAN accept policies.",
+  "manual": "Switch VLAN configuration; diagram; guest/IoT isolation test.",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "NET-07",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Switching and wireless: firmware currency, loop protection, uplink redundancy, PoE budget, WPA2/3-Enterprise with 802.1X (no corporate PSK), controller/cloud licence expiry",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Meraki dashboard / Aruba Central / FortiSwitch: firmware vs recommended, licence expiry, corporate SSID authentication (802.1X vs PSK), STP/loop protection.",
+  "e8": [
+   "PO"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "NET-08",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Network monitoring coverage: every firewall/switch/AP/UPS in Orion (or LogicMonitor/Meraki) with SNMPv3, utilisation alerts, config backup (NCM/FortiManager), syslog to FortiAnalyzer/Rapid7",
+  "auto": "Partial",
+  "collectors": [
+   "FortiGate"
+  ],
+  "gives": "FortiAnalyzer/syslog shipping and NTP on the firewall.",
+  "manual": "Orion node list vs device inventory (SNMPv3); NCM/FortiManager config backups; Rapid7 log sources.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "NET-09",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "WAN and internet resilience: dual ISP or SD-WAN with tested failover, 4G/5G backup where appropriate, single points of failure listed, carrier SLA known",
+  "auto": "Partial",
+  "collectors": [
+   "FortiGate"
+  ],
+  "gives": "Site-to-site tunnel list.",
+  "manual": "SD-WAN/dual-WAN configuration, failover test records, carrier SLAs (PROFILE sites).",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "NET-10",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "DNS and domain hygiene: registrar (TPP) and DNS (EasyDNS) access controlled, registrar lock, expiry > 6 months, CAA record, stale/dangling records removed (subdomain takeover)",
+  "auto": "Partial",
+  "collectors": [
+   "DNS"
+  ],
+  "gives": "NS provider, CAA, DNSSEC, MTA-STS/TLS-RPT per domain.",
+  "manual": "TPP Wholesale: expiry, registrar lock, contacts; EasyDNS zone export for dangling records.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "NET-11",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Network access control: 802.1X/MAB or port security on wired, rogue device detection, DHCP snooping/dynamic ARP inspection where supported",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Switch configs (802.1X/MAB, port security, unused ports disabled); NAC console (FortiNAC/Meraki/ClearPass).",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "NET-12",
+  "dom": "NET",
+  "domain": "Network & Firewall",
+  "control": "Voice/UC and special networks: Teams Phone/SBC or PBX support status, QoS, emergency-call location, BMS/CCTV/OT firmware and isolation",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Teams admin centre (Teams Phone/SBC), PBX console support status, OT/CCTV/BMS inventory and vendor remote access.",
+  "e8": [
+   "PO"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "BDR-01",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Backup coverage: every production server/VM, database and SaaS workload is in a backup job; unprotected list is empty",
+  "auto": "Full",
+  "collectors": [
+   "Veeam",
+   "Azure"
+  ],
+  "gives": "Powered-on VMs without a restore point in 7 days, Azure VMs without a backup item.",
+  "manual": "vminfo.empowercloud (emPOWER last backup) for hosted workloads; BAMS backup line items (eFO); physical/agent-protected servers.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "BDR-02",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Backup success and monitoring: 30-day success >= 98%, failures actioned within 24 h, job alerts to bA Backup team/NOC, warnings not chronically ignored",
+  "auto": "Full",
+  "collectors": [
+   "Veeam"
+  ],
+  "gives": "30-day session results, success rate, jobs with repeated failures/warnings, disabled schedules, copy jobs.",
+  "manual": "Orion backup monitors; SNOW incidents for backup failures (actioned within 24 h?).",
+  "e8": [
+   "RB"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "BDR-03",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Retention, RPO and RTO documented per system tier and agreed with the business; regulatory retention (e.g. 7 years financial records) reflected; matches contract",
+  "auto": "Partial",
+  "collectors": [
+   "Veeam"
+  ],
+  "gives": "Configured retention per job.",
+  "manual": "Agreed RPO/RTO/retention table (SoW/BAMS scope, PROFILE.md, DR plan).",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "BDR-04",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "3-2-1 and immutability: second copy offsite (emPOWER cross-DC / Azure / object storage), immutable or air-gapped copy, repository not domain-joined, separate credentials, MFA on backup console",
+  "auto": "Full",
+  "collectors": [
+   "Veeam",
+   "Azure"
+  ],
+  "gives": "Repository types, immutability properties, hardened repos, scale-out repos, backup server domain-joined, console roles/MFA; Azure vault soft delete and immutability.",
+  "manual": "Offsite copy path verification; separate credentials for backup infrastructure.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "BDR-05",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Restore testing: file, VM and application-level restores tested in the last 6 months with evidence; DR runbook exercised annually",
+  "auto": "Partial",
+  "collectors": [
+   "Veeam"
+  ],
+  "gives": "SureBackup jobs and last results.",
+  "manual": "Restore test evidence (tickets / LOG.md) per tier; DR test report.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "BDR-06",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Application-consistent backups: SQL/Exchange/AD with VSS and log truncation; AD system state and forest-recovery capability; DC snapshot policy",
+  "auto": "Full",
+  "collectors": [
+   "Veeam",
+   "AD",
+   "vSphere"
+  ],
+  "gives": "Jobs without application-aware processing, last AD system-state backup per partition (repadmin /showbackup), long-lived snapshots.",
+  "manual": "DC snapshot-revert prohibition documented.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "BDR-07",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Endpoint and user data protection: OneDrive Known Folder Move enforced, no critical data on local drives or personal cloud, laptop loss scenario covered",
+  "auto": "Partial",
+  "collectors": [
+   "Intune",
+   "Endpoints"
+  ],
+  "gives": "Intune ADMX Known Folder Move settings, third-party sync clients on hosts.",
+  "manual": "OneDrive usage report; Defender for Cloud Apps discovery for unsanctioned storage.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "BDR-08",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "DR plan and BCP: documented plan with system priorities, RTO tiers, failover procedure (emPOWER DRaaS / ASR / rebuild), dependency map (DNS, identity, licensing), contact tree, reviewed <= 12 months",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "DR/BCP document (SNOW KB / SharePoint) date and content; emPOWER DRaaS / ASR configuration (Azure ASR items appear in AZ-05); contact tree.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "BDR-09",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Backup platform lifecycle: Veeam version in support, repository capacity >= 6 months growth headroom, backup server OS supported, licences current",
+  "auto": "Full",
+  "collectors": [
+   "Veeam",
+   "Servers"
+  ],
+  "gives": "Veeam build and licence/support expiry, repository capacity, backup server OS support.",
+  "manual": "-",
+  "e8": [
+   "RB",
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "BDR-10",
+  "dom": "BDR",
+  "domain": "Backup & DR",
+  "control": "Configuration backups of platforms: firewall/switch configs, Entra/Intune/CA policy exports, Azure resource templates, hypervisor config - versioned and restorable",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "FortiManager revision history / Orion NCM for network configs; Intune/Entra exports (M365DSC or scripted) and Azure templates in a versioned store.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "COV-01",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "BAMS inclusions reconciled: PowerBI 'eFO People or Items in My Org - with ROLES' vs actual devices/services - every billed item exists, every managed item is billed, BAMS codes correct",
+  "auto": "Partial",
+  "collectors": [
+   "AD",
+   "Intune",
+   "Servers",
+   "Endpoints",
+   "Azure"
+  ],
+  "gives": "Inventories to diff against the billing extract: AD servers, Intune devices, host results (hosts.csv), Azure VMs.",
+  "manual": "PowerBI 'eFO People or Items in My Org - with ROLES'; eFO Cloud Services; SNOW CIs; raise differences with SDM/CAM.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-02",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Monitoring coverage: every server, network device and critical service in Orion (LogicMonitor for cloud); muted/unmanaged nodes justified (they still consume licences)",
+  "auto": "Partial",
+  "collectors": [
+   "Servers",
+   "Azure"
+  ],
+  "gives": "Hosts unreachable over WinRM (management gaps), Azure alert rules/action groups.",
+  "manual": "Orion node list vs inventory; unmanaged/muted nodes with reasons; Catalogue Tasks for onboarding.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-03",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Monitoring quality: application/service monitors for critical apps (not just ping/CPU), thresholds tuned, top alerters reviewed, alerts map to runbooks, SSL/domain/backup monitors present",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Orion application monitors for tier-1 apps, 30-day alert history/top alerters, NOC runbooks (SNOW KB), certificate/backup monitors.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "COV-04",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Patching coverage: every server and endpoint in an N-Central patch policy; devices not checked in > 30 days; approvals and windows documented; exclusions justified",
+  "auto": "Partial",
+  "collectors": [
+   "Endpoints",
+   "Servers"
+  ],
+  "gives": "RMM/management agent presence per host and hosts without one.",
+  "manual": "N-Central: device list, patch policy membership, last check-in, exclusions with reasons.",
+  "e8": [
+   "PO",
+   "PA"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-05",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Security tooling coverage vs contract: EDR, Huntress, Rapid7, Airlock, Mimecast seat counts vs devices/users; agents missing; SIEM log sources (DCs, firewalls, M365) actually ingesting",
+  "auto": "Partial",
+  "collectors": [
+   "Endpoints",
+   "Servers",
+   "Intune",
+   "Entra"
+  ],
+  "gives": "EDR/MDR/RMM/app-control agent coverage per host with missing lists; Intune remote tools; Defender alert backlog.",
+  "manual": "Licensed seat counts (eFO subscriptions) vs deployed; Rapid7 IDR data-collection health; Huntress portal; Airlock/Mimecast seat counts.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-06",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Ticket and incident trends: last 90 days incidents by CI/category, repeat offenders raised as problem records, P1/P2 count, SLA breaches, noisy CIs recorded in PROBLEMS.md",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SNOW incident report (last 90 days by CI/category), SLA breaches, problem records; PROBLEMS.md signatures.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-07",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Change and configuration discipline: changes go through RFCs, CIs updated after changes, config drift reports (Orion NCM / FortiManager) reviewed, unauthorised change evidence investigated",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SNOW change records vs FortiManager/NCM revision history; CI updates after builds/decoms.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-08",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "bA access hygiene: bA credentials in CyberArk customer safe current and rotating, RDM nodes valid, no stale bA accounts in client AD/Entra, GDAP not expiring, offboarded engineers removed",
+  "auto": "Partial",
+  "collectors": [
+   "Entra",
+   "AD"
+  ],
+  "gives": "bA-named accounts visible in privileged role/group lists (Entra roles, AD privileged users).",
+  "manual": "CyberArk rotation dates (customer safe), RDM node validity, GDAP expiry (Lighthouse), squad roster comparison.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-09",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Escalation and contact matrix current: client technical/business/after-hours contacts, vendor support contracts and numbers (ISP, Fortinet, Microsoft, LoB vendors), CrowdStrike uninstall-key process, documented in SNOW account and PROFILE.md",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SNOW customer account contacts, PROFILE.md, vendor contracts/support numbers, CrowdStrike uninstall-key process.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "COV-10",
+  "dom": "COV",
+  "domain": "Monitoring, Patching & BAMS Coverage",
+  "control": "Reporting and cadence delivered: monthly Intune/M365 usage and Defender reports issued and read, quarterly M365 Health Report top-3 acted on, operational/strategic meetings held on cadence",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Report folder (SharePoint), LOG.md meeting entries, COMMITMENTS.md, PROFILE.md meeting cadence.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "SEC-01",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Essential Eight target maturity agreed with the client (ML1 baseline; ML2 for regulated/critical) and documented; exceptions register with compensating controls",
+  "auto": "Partial",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Secure Score category gaps as a conversation starter.",
+  "manual": "Client's agreed E8 target and exceptions register (PROFILE.md strategic notes / board paper).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SEC-02",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "MDR/SOC and detection: Huntress (endpoint + M365 ITDR) and/or Rapid7 IDR deployed with full coverage, response hours defined, alert-to-action process, log retention >= 12 months",
+  "auto": "Partial",
+  "collectors": [
+   "Endpoints",
+   "Servers",
+   "Entra"
+  ],
+  "gives": "MDR agent coverage per host (Huntress/Rapid7), Defender alert backlog and age.",
+  "manual": "Huntress / Rapid7 IDR console: coverage, log sources, response hours, alert-to-action times, retention.",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "SEC-03",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Central logging and log protection: event logs centralised (Rapid7/Sentinel/other), protected from tampering, MFA/privileged/application-control events logged, PowerShell and command-line logging (E8 ML2)",
+  "auto": "Partial",
+  "collectors": [
+   "Endpoints",
+   "Servers",
+   "Azure"
+  ],
+  "gives": "PowerShell/command-line logging and Security log size/clearing on hosts; Azure Activity Log diagnostic settings.",
+  "manual": "SIEM log sources and retention (Rapid7 IDR / Sentinel); Entra sign-in/audit log export (diagnostic settings).",
+  "e8": [
+   "UAH",
+   "RAP",
+   "MFA",
+   "AC"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "SEC-04",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Vulnerability management programme: authenticated scanning across servers, endpoints and network devices (Rapid7 IVM / Defender VM), cadence per E8 ML1, remediation SLAs tracked, exception process",
+  "auto": "Partial",
+  "collectors": [
+   "Azure",
+   "Servers",
+   "Endpoints"
+  ],
+  "gives": "Azure Update Manager assessment, host patch age, known-vulnerable software versions.",
+  "manual": "Rapid7 InsightVM / Defender Vulnerability Management: scope vs inventory, scan cadence, ageing, exceptions, remediation SLAs.",
+  "e8": [
+   "PA",
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "SEC-05",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "External attack surface and credential exposure: LionGard/Rapid7 external view, leaked-credential monitoring for the domain, look-alike domain watch",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "LionGard / Rapid7 external scan for unknown assets; HIBP domain search; DMARC reports for look-alike domains (domain list is in raw/dns.domains.json).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SEC-06",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Security awareness: phishing simulation and training programme running (Huntress SAT / KnowBe4 / Defender Attack Simulation), report-phish button deployed, results trending",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Training platform reports (Huntress SAT / KnowBe4 / Defender Attack Simulation); report-message add-in deployment.",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "SEC-07",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Incident response readiness: client IR plan and bA runbook exist, roles and contacts, cyber-insurance conditions met (MFA, EDR, backups, patching), OAIC notifiable-data-breach and ASD reporting obligations understood, tabletop exercised",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "IR plan and bA runbook (SNOW KB), insurer conditions (client), tabletop record (LOG.md).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SEC-08",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Privileged access process (E8 RAP): requests validated on first grant, revalidated at 12 months, disabled after 45 days inactivity (ML2), privileged accounts have no internet/email, break-glass/service/local admin credentials long, unique and managed",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "AD"
+  ],
+  "gives": "Privileged accounts with mailbox/licence, privileged AD accounts inactive > 45 days, password-never-expires, role breakdown.",
+  "manual": "Access request records (SNOW) and 12-month revalidation evidence.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SEC-09",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Governance and compliance drivers: information security / acceptable use / access policies current; obligations identified (Privacy Act reforms, APRA CPS 234, SOCI, ISO 27001, PCI DSS); cyber-insurance renewal date known",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Client policy set and review dates; obligations (Privacy Act, APRA CPS 234, SOCI, ISO 27001, PCI); insurance renewal month.",
+  "e8": [],
+  "tag": "Client-owned"
+ },
+ {
+  "id": "SEC-10",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Physical and environmental: comms/server room access control, UPS runtime and battery age, cooling and environmental monitoring, cabling labelled, camera coverage",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Site visit / Field Services report; UPS management card in Orion (battery age, runtime).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SEC-11",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Defender / Secure Score remediation tracked: monthly Defender report recommendations (ASR first, then client-prioritised) have owners; risk-accepted items marked in the portal",
+  "auto": "Full",
+  "collectors": [
+   "Entra"
+  ],
+  "gives": "Secure Score improvement actions with unrealised points, ranked.",
+  "manual": "Disposition of the last monthly Defender report; risk-accepted items marked in the portal.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "SEC-12",
+  "dom": "SEC",
+  "domain": "Security Programme & Essential Eight",
+  "control": "Third-party and vendor remote access: inventory of vendors with access (VPN accounts, TeamViewer/AnyDesk/ScreenConnect, RMM), MFA and time-bounding, monitoring, unsanctioned remote tools blocked",
+  "auto": "Full",
+  "collectors": [
+   "Endpoints",
+   "Servers",
+   "Intune",
+   "FortiGate"
+  ],
+  "gives": "Remote-access tools installed/running per host, Intune-detected remote tools, VPN local users.",
+  "manual": "Vendor access register; firewall logs for vendor sessions.",
+  "e8": [
+   "AC",
+   "RAP"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "AZ-01",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure governance: subscriptions and management groups documented, tagging (owner, cost centre, environment) enforced, naming standard, resource locks on critical resources, Azure Lighthouse delegation to bA",
+  "auto": "Full",
+  "collectors": [
+   "Azure"
+  ],
+  "gives": "Subscriptions, resource counts, tag coverage, locks, management groups, Lighthouse registrations.",
+  "manual": "-",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "AZ-02",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure RBAC and identities: Owner/Contributor at subscription scope limited and named, PIM for Azure roles where licensed, no classic administrators, service principal secrets/certificates with expiry tracked, managed identities preferred",
+  "auto": "Full",
+  "collectors": [
+   "Azure",
+   "Entra"
+  ],
+  "gives": "Owner/Contributor/UAA at subscription scope, direct user assignments, classic admins, service principals; app registration credentials expiring/long-lived.",
+  "manual": "PIM for Azure roles configuration (P2).",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "AZ-03",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure cost management: budgets and alerts set, monthly spend trend, Advisor cost recommendations actioned (right-size, reservations/savings plans, orphaned disks/IPs/NICs, stopped-not-deallocated VMs), Hybrid Benefit applied",
+  "auto": "Full",
+  "collectors": [
+   "Azure"
+  ],
+  "gives": "6-month spend by month, budgets per subscription, Advisor cost savings, orphaned disks/NICs/IPs, stopped-not-deallocated VMs, Hybrid Benefit usage.",
+  "manual": "-",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "AZ-04",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure security posture: Defender for Cloud secure score, Defender plans on for servers/SQL/storage where warranted, JIT VM access, no public RDP/SSH in NSGs, storage accounts not anonymous, TLS 1.2 minimum, secrets in Key Vault, diagnostics to Log Analytics",
+  "auto": "Full",
+  "collectors": [
+   "Azure"
+  ],
+  "gives": "Defender for Cloud score and high-severity recommendations, NSG internet exposure, storage public access/TLS/network, Key Vault purge protection, Defender plans, Activity Log diagnostics.",
+  "manual": "-",
+  "e8": [
+   "RAP",
+   "PO"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "AZ-05",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure resilience and backup: Azure Backup on all VMs with soft delete/immutability, ASR or availability zones for tier-1, PaaS SQL PITR/geo-redundancy aligned to RPO, VM agents and extensions healthy",
+  "auto": "Full",
+  "collectors": [
+   "Azure"
+  ],
+  "gives": "VMs without backup items, failed/old backups, vault soft delete/immutability/redundancy, ASR replication health.",
+  "manual": "PaaS SQL PITR/geo-redundancy per database if in scope.",
+  "e8": [
+   "RB"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "AZ-06",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure networking: topology documented (hub/spoke or single VNet), NSG/ASG hygiene, Azure Firewall/NVA where needed, VPN/ExpressRoute redundancy, private endpoints for PaaS, private DNS design, public IP inventory",
+  "auto": "Partial",
+  "collectors": [
+   "Azure"
+  ],
+  "gives": "Public IP inventory, storage/Key Vault network defaults.",
+  "manual": "Network Watcher topology, VPN/ExpressRoute redundancy, private endpoints per PaaS service, private DNS design.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "AZ-07",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Azure operations: Azure Monitor alerts (VM heartbeat, disk, backup failure, cost) routed to bA (LogicMonitor), Azure Update Manager schedules, Arc for on-prem servers if in scope, Azure Policy baseline (allowed locations, required tags)",
+  "auto": "Full",
+  "collectors": [
+   "Azure"
+  ],
+  "gives": "Policy compliance and assignments, alert rules and action groups, Update Manager assessments, Arc machines, monitor agents.",
+  "manual": "Confirm action-group destinations reach bA (LogicMonitor).",
+  "e8": [
+   "PO"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "AZ-08",
+  "dom": "AZ",
+  "domain": "Azure & Cloud",
+  "control": "Other cloud and SaaS: AWS/GCP footprint (if any) with equivalent controls; critical SaaS inventory (owner, SSO, backup, contract, data location); shadow IT discovery via Defender for Cloud Apps or firewall logs",
+  "auto": "Partial",
+  "collectors": [
+   "Intune",
+   "Endpoints",
+   "Entra"
+  ],
+  "gives": "Sync clients and shadow-IT hints from device inventories; Enterprise applications count.",
+  "manual": "Defender for Cloud Apps discovery; SaaS register built with the client; AWS/GCP inventory.",
+  "e8": [
+   "MFA",
+   "RB"
+  ],
+  "tag": "Value-add"
+ },
+ {
+  "id": "DOC-01",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Critical infrastructure documentation currency: per-customer SNOW KB articles for AD, network, backup, firewall and key apps updated within 1 month of change; services docs within 3 months; as-builts for recent projects",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SNOW Knowledge per-customer KBs (last modified vs last change), SharePoint Technical folder, Confluence legacy content.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "DOC-02",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Architecture and network diagrams current, versioned in SharePoint Technical docs, and linked from SNOW KB",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SharePoint Technical docs diagrams (version/date) and SNOW KB links.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "DOC-03",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Credential handling: all client credentials in CyberArk customer safes, none in documents, tickets, email or Confluence; rotation on staff exit (both sides); break-glass procedure documented",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "CyberArk PVWA customer safe; keyword sweep of SNOW KB / SharePoint / Confluence for credentials; rotation after staff changes.",
+  "e8": [
+   "RAP"
+  ],
+  "tag": "BAU"
+ },
+ {
+  "id": "DOC-04",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Runbooks and known-issue KBs: top 5 recurring ticket types have KBs, P1 runbooks exist (DR failover, ISP failover, EDR uninstall key, tenant lock-out), problem records for recurring issues",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SNOW KB coverage of the top recurring ticket types, P1 runbooks, problem records.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "DOC-05",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Configuration management: SNOW CIs accurate (owner, environment, criticality, IP/NAT IP), relationships/dependency map for tier-1 services, eFO/SNOW sync gaps closed",
+  "auto": "Partial",
+  "collectors": [
+   "AD",
+   "Servers",
+   "Azure",
+   "vSphere"
+  ],
+  "gives": "Inventories with OS/IP/role that serve as the truth side for CI accuracy.",
+  "manual": "SNOW CMDB sample of 10 CIs; eFO/SNOW sync gaps; tier-1 dependency map.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "DOC-06",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Standards documented: SOE/build standards, naming conventions, patch and change windows, maintenance calendar, client-specific decommission guide",
+  "auto": "Partial",
+  "collectors": [
+   "AD",
+   "Intune"
+  ],
+  "gives": "GPO inventory and unlinked GPOs, Intune update rings (patch windows).",
+  "manual": "SOE/build standards, naming conventions, maintenance calendar, decommission guide (SNOW KB / SharePoint).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "DOC-07",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Knowledge risk: single points of knowledge (client side and bA side), documented split of responsibilities (client IT vs bA RACI), informal 'helpers' with admin rights identified",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "PROFILE.md contacts/roles, RACI in SoW; informal admins (use IAM-05 and local-admin evidence as prompts).",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "DOC-08",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Licence and contract records: software licence register (Microsoft CSP/EA, VMware, Veeam, Fortinet, Adobe, LoB apps) with proof and renewal dates; SoW/BAMS scope accessible to the squad",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Licence register (SharePoint Commercial), eFO annuity, vendor portals; collectors supply Entra SKUs and Veeam/vSphere/FortiGate licence data as inputs.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "DOC-09",
+  "dom": "DOC",
+  "domain": "Documentation & Operational Hygiene",
+  "control": "Risk communication: technical risks with business consequence recorded (OPPORTUNITIES.md / client risk register), formally notified to SDM and CAM with dates, client risk-acceptance recorded where declined",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "OPPORTUNITIES.md, COMMITMENTS.md, notification emails/Teams messages to SDM and CAM.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "LIC-01",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Hardware lifecycle register: servers, storage, network, UPS, endpoints - purchase date, warranty/support end, replacement year, budget signalled to SDM/CAM",
+  "auto": "Partial",
+  "collectors": [
+   "Servers",
+   "Endpoints",
+   "vSphere",
+   "Intune"
+  ],
+  "gives": "Manufacturer/model/serial per host and hypervisor host hardware (inputs to the register).",
+  "manual": "Warranty lookups (Dell/HP) by serial, Fortinet/Meraki/Aruba EoS, purchase dates, FY budget mapping.",
+  "e8": [],
+  "tag": "Billable"
+ },
+ {
+  "id": "LIC-02",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Software and OS lifecycle register: Windows/Server/SQL/Exchange/vSphere/Veeam/FortiOS versions with EoS dates; anything already past EoS (e.g. SQL 2016 since 14 Jul 2026, vSphere 7 since 2 Oct 2025) or within 12 months (e.g. Server 2016 on 12 Jan 2027) flagged",
+  "auto": "Full",
+  "collectors": [
+   "AD",
+   "Servers",
+   "Endpoints",
+   "Azure",
+   "vSphere",
+   "Veeam",
+   "FortiGate"
+  ],
+  "gives": "OS/SQL/Exchange/vSphere/Veeam/FortiOS versions with support status and EoS dates where known.",
+  "manual": "Consolidate into the register; vendor lifecycle pages for network gear and LoB apps.",
+  "e8": [
+   "PO",
+   "PA"
+  ],
+  "tag": "Billable"
+ },
+ {
+  "id": "LIC-03",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Renewals calendar: M365 CSP/NCE anniversaries, FortiCare/FortiGuard, Meraki/Aruba Central, Veeam, EDR/Huntress/Rapid7/Mimecast, domains and certificates - items > 90 days out surfaced to SDM/CAM",
+  "auto": "Partial",
+  "collectors": [
+   "FortiGate",
+   "vSphere",
+   "Veeam",
+   "Entra"
+  ],
+  "gives": "FortiGuard/FortiCare, vSphere and Veeam licence expiry; M365 SKU list.",
+  "manual": "eFO annuity (NCE anniversaries), Meraki/Aruba Central, EDR/Huntress/Rapid7/Mimecast terms, GeoCerts, TPP.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "LIC-04",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Licence compliance and optimisation: M365 assigned vs active, Windows Server/RDS CALs, SQL core licensing on VMs, VMware subscription status, Azure Hybrid Benefit; true-up exposure",
+  "auto": "Full",
+  "collectors": [
+   "Entra",
+   "Exchange",
+   "Azure"
+  ],
+  "gives": "Unassigned M365 seats, licensed inactive/shared mailboxes, Hybrid Benefit, Advisor savings.",
+  "manual": "RDS CALs, SQL core licensing vs VMs, VMware subscription terms.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "LIC-05",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Technology roadmap: 12-24 month roadmap agreed with the client (refreshes, migrations, security uplift), aligned to business drivers, reviewed quarterly with SDM/CAM, feeding eFO opportunities",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "Roadmap document / last technology report, OPPORTUNITIES.md, eFO leads.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "LIC-06",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Capacity and budget cycle: headcount/site change plans, storage and bandwidth growth, M365 storage quotas, client financial year and budget submission dates captured so proposals land before budgeting",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "PROFILE.md (FY, budget month), SDM briefing, growth signals; M365 storage reports.",
+  "e8": [],
+  "tag": "Value-add"
+ },
+ {
+  "id": "LIC-07",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Contract scope fit: BAMS inclusions vs what the client actually needs; out-of-scope work being absorbed as BAU (leakage); unused inclusions; SLA and after-hours coverage fit",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "SoW/BAMS schedule vs LOG.md billable fields and SNOW time entries; unused inclusions; SLA misfit examples.",
+  "e8": [],
+  "tag": "BAU"
+ },
+ {
+  "id": "LIC-08",
+  "dom": "LIC",
+  "domain": "Lifecycle, Licensing & Commercial",
+  "control": "Strategic risks logged: top risks with business consequence in OPPORTUNITIES.md and client risk register, communicated to SDM and CAM with dates, acceptance recorded when declined",
+  "auto": "None",
+  "collectors": [],
+  "gives": "-",
+  "manual": "OPPORTUNITIES.md / client risk register, COMMITMENTS.md, notification dates.",
+  "e8": [],
+  "tag": "BAU"
+ }
+]

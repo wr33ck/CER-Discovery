@@ -1,0 +1,375 @@
+{
+ "Meta": {
+  "Hostname": "DC01",
+  "FQDN": "DC01.corp.local",
+  "Domain": "corp.local",
+  "PartOfDomain": true,
+  "CollectedAt": "2026-09-05T20:00:00",
+  "RunAs": "NT AUTHORITY\\SYSTEM",
+  "PSVersion": "5.1.20348.2849",
+  "ScriptVersion": "1.0",
+  "IsAdmin": true
+ },
+ "System": {
+  "OS": "Windows Server 2019",
+  "Version": "10.0.17763",
+  "Build": "10.0.17763.6414",
+  "EditionId": "ServerDatacenter",
+  "ProductType": 2,
+  "InstallDate": "2022-03-01T00:00:00",
+  "LastBoot": "2026-08-31T20:00:00",
+  "UptimeDays": 5.2,
+  "Manufacturer": "VMware, Inc.",
+  "Model": "VMware Virtual Platform",
+  "Serial": "VMware-42",
+  "IsVirtual": true,
+  "IsLaptop": false,
+  "Support": {
+   "Family": "Windows Server 2019",
+   "Supported": true,
+   "EndOfSupport": "",
+   "Note": ""
+  },
+  "IPv4": [
+   "10.0.0.5"
+  ]
+ },
+ "Patching": {
+  "LastHotfixDate": "2026-08-24T20:00:00",
+  "LastHotfixKB": "KB5063878",
+  "HotfixCount": 22,
+  "LastHotfixAgeDays": 12,
+  "ManagedBy": "WSUS/RMM: http://ncentral:8530",
+  "PendingReboot": {
+   "Cbs": false,
+   "Wu": false,
+   "FileRename": false,
+   "Any": false
+  },
+  "PendingUpdates": null,
+  "PendingUpdateTitles": []
+ },
+ "Agents": {
+  "EDR": [
+   "CrowdStrike Falcon"
+  ],
+  "AV": [
+   "Microsoft Defender Antivirus"
+  ],
+  "MDR": [
+   "Huntress",
+   "Rapid7 Insight Agent"
+  ],
+  "AppControl": [],
+  "RMM": [
+   "N-able N-central Agent"
+  ],
+  "Backup": [],
+  "RemoteTools": [],
+  "Other": [
+   "VMware Tools"
+  ],
+  "Detail": []
+ },
+ "Roles": {
+  "IsDomainController": true,
+  "HasSql": false,
+  "SqlInstances": [],
+  "HasIIS": false,
+  "HasExchange": false,
+  "ExchangeBuild": null,
+  "HasHyperV": false,
+  "HasADSync": true,
+  "HasVeeamBackupServer": false,
+  "HasCertSvc": false,
+  "HasDhcp": true,
+  "HasDns": true,
+  "HasNPS": false,
+  "HasWSUS": false,
+  "HasFileShares": false,
+  "SpoolerRunning": true,
+  "SharedPrinters": 0,
+  "IsRdsHost": false,
+  "HasWinRM": true
+ },
+ "Defender": {
+  "Present": true,
+  "AMRunningMode": "Passive Mode",
+  "AntivirusEnabled": true,
+  "RealTimeProtectionEnabled": true,
+  "IsTamperProtected": true,
+  "SignatureAgeDays": 1,
+  "ASR": [
+   {
+    "Id": "d4f940ab-401b-4efc-aadc-ad5f3c50688a",
+    "Name": "d4f940ab-401b-4efc-aadc-ad5f3c50688a",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "3b576869-a4ec-4529-8536-b80a7769e899",
+    "Name": "3b576869-a4ec-4529-8536-b80a7769e899",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "75668c1f-73b5-4cf0-bb93-3ecf5cb7cc84",
+    "Name": "75668c1f-73b5-4cf0-bb93-3ecf5cb7cc84",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "7674ba52-37eb-4a4f-a9a1-f0f9a1619a2c",
+    "Name": "7674ba52-37eb-4a4f-a9a1-f0f9a1619a2c",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "9e6c4e1f-7d60-472f-ba1a-a39ef669e4b2",
+    "Name": "9e6c4e1f-7d60-472f-ba1a-a39ef669e4b2",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "d1e49aac-8f56-4280-b9ba-993a6d77406c",
+    "Name": "d1e49aac-8f56-4280-b9ba-993a6d77406c",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "5beb7efe-fd9a-4556-801d-275e5ffc04cc",
+    "Name": "5beb7efe-fd9a-4556-801d-275e5ffc04cc",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "be9ba2d9-53ea-4cdc-84e5-9b1eeee46550",
+    "Name": "be9ba2d9-53ea-4cdc-84e5-9b1eeee46550",
+    "Action": 1,
+    "ActionName": "Block"
+   },
+   {
+    "Id": "92e97fa1-2edf-4476-bdd6-9dd0b4dddc7b",
+    "Name": "92e97fa1-2edf-4476-bdd6-9dd0b4dddc7b",
+    "Action": 2,
+    "ActionName": "Audit"
+   }
+  ],
+  "ASRBlockCount": 8,
+  "ASRAuditCount": 1
+ },
+ "Hardening": {
+  "SMB1Enabled": false,
+  "SMB1FeatureState": "Disabled",
+  "TLS10Server": "Disabled",
+  "TLS11Server": "Disabled",
+  "TLS12Server": "Enabled",
+  "RDPEnabled": true,
+  "RDPNLARequired": true,
+  "Firewall": {
+   "Domain": true,
+   "Private": true,
+   "Public": true
+  },
+  "FirewallAllProfilesOn": true,
+  "UAC": {
+   "EnableLUA": 1,
+   "ConsentPromptBehaviorAdmin": 5
+  },
+  "LmCompatibilityLevel": 3,
+  "LLMNRDisabled": true,
+  "WDigestUseLogonCredential": 0,
+  "AutoLogonConfigured": false,
+  "PowerShellV2": "Disabled",
+  "PSLogging": {
+   "ScriptBlock": true,
+   "Module": true,
+   "Transcription": false
+  },
+  "CmdLineAuditing": true,
+  "IE11Feature": "Not present",
+  "LAPS": {
+   "WindowsLAPSPolicy": true,
+   "PolicySource": "Intune CSP",
+   "BackupDirectory": "Entra ID",
+   "LegacyLAPS": false,
+   "Configured": true
+  },
+  "ScreenLock": {
+   "MachineInactivityTimeoutSecs": 900,
+   "UserPolicies": []
+  },
+  "USBStorage": {
+   "DenyAllRemovable": null,
+   "USBSTORStart": 3,
+   "RemovableDiskDenyWrite": null
+  },
+  "PointAndPrint": {
+   "RestrictDriverInstallationToAdministrators": 1,
+   "NoWarningNoElevationOnInstall": 0,
+   "UpdatePromptSettings": 0
+  },
+  "SecurityLogMaxMB": 196,
+  "DC": {
+   "LDAPServerIntegrity": 1,
+   "LdapEnforceChannelBinding": 1,
+   "NtlmMinServerSec": 537395200,
+   "RestrictNTLMInDomain": 0
+  }
+ },
+ "Office": {
+  "Installed": null,
+  "MachinePolicy": {
+   "_MacroRuntimeScanScope": null
+  },
+  "UserPolicies": [],
+  "MacroPolicyPresent": false
+ },
+ "Browsers": {
+  "Edge": {
+   "Installed": true,
+   "Version": "129.0.2792.52",
+   "PolicyCount": 14,
+   "ForceInstalledExtensions": [
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx"
+   ],
+   "KeySettings": {}
+  },
+  "Chrome": {
+   "Installed": false,
+   "Version": null,
+   "PolicyCount": 0,
+   "ForceInstalledExtensions": [],
+   "KeySettings": {}
+  },
+  "Firefox": {
+   "Installed": false,
+   "Version": null,
+   "PoliciesPresent": false
+  },
+  "JavaRuntimes": []
+ },
+ "AppControl": {
+  "AppLocker": {
+   "Present": false,
+   "Collections": {},
+   "AppIDSvcRunning": false
+  },
+  "WDAC": {
+   "ActivePolicies": [],
+   "CodeIntegrityPolicyEnforcementStatus": 0,
+   "UsermodeCodeIntegrityPolicyEnforcementStatus": 0,
+   "Meaning": "Off",
+   "SIPolicyFilePresent": false
+  },
+  "ThirdParty": []
+ },
+ "LocalAccounts": {
+  "Administrators": [
+   {
+    "Name": "CORP\\Domain Admins",
+    "Type": "Group",
+    "Source": "ActiveDirectory"
+   }
+  ],
+  "AdminCount": 1,
+  "NonStandardAdmins": [],
+  "NonStandardAdminCount": 0,
+  "BuiltinAdminEnabled": true,
+  "BuiltinAdminName": "Administrator",
+  "BuiltinAdminPasswordAgeDays": 400,
+  "GuestEnabled": false,
+  "OtherEnabledLocalUsers": []
+ },
+ "Encryption": {
+  "BitLockerAvailable": true,
+  "Volumes": [
+   {
+    "Mount": "C:",
+    "Type": "OperatingSystem",
+    "ProtectionStatus": "On",
+    "VolumeStatus": "FullyEncrypted",
+    "EncryptionMethod": "XtsAes256",
+    "EncryptionPercentage": 100,
+    "KeyProtectors": [
+     "Tpm",
+     "RecoveryPassword"
+    ]
+   }
+  ],
+  "OSVolumeProtected": true,
+  "OSVolumeHasRecoveryPassword": true,
+  "RecoveryKeyEscrow": "n/a"
+ },
+ "Network": {
+  "Adapters": [],
+  "NetBIOS": [],
+  "ListeningPorts": [
+   {
+    "Port": 135,
+    "Process": "svchost"
+   },
+   {
+    "Port": 445,
+    "Process": "System"
+   },
+   {
+    "Port": 3389,
+    "Process": "svchost"
+   }
+  ],
+  "RiskyListeners": [
+   {
+    "Port": 135,
+    "Process": "svchost"
+   },
+   {
+    "Port": 445,
+    "Process": "System"
+   },
+   {
+    "Port": 3389,
+    "Process": "svchost"
+   }
+  ],
+  "TimeSource": "time.windows.com,0x9",
+  "TimeSyncType": "NTP",
+  "TimeSourceIsLocalClock": false,
+  "WinRMRunning": true
+ },
+ "Storage": {
+  "Volumes": [
+   {
+    "Drive": "C:",
+    "SizeGB": 256,
+    "FreeGB": 100,
+    "FreePct": 39
+   }
+  ],
+  "LowSpaceVolumes": [],
+  "Shares": [],
+  "BroadWriteShares": []
+ },
+ "Certificates": {
+  "Count": 0,
+  "ExpiringOrExpired": [],
+  "All": []
+ },
+ "Software": {
+  "Count": 60,
+  "Watchlist": [],
+  "RemoteTools": [],
+  "DotNetRelease": 533320,
+  "DotNetVersion": "4.8.09032",
+  "Browsers": [
+   "Microsoft Edge 129.0.2792.52"
+  ],
+  "All": []
+ },
+ "Events": {
+  "FailedLogons24h": 3,
+  "SecurityLogCleared90d": 0,
+  "UnexpectedShutdowns30d": 0
+ },
+ "Errors": []
+}
