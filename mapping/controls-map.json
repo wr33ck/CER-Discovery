@@ -8,12 +8,15 @@
   "collectors": [
    "Entra",
    "AD",
-   "Servers"
+   "Servers",
+   "ExchangeOnPrem"
   ],
-  "gives": "Sync type, last sync time, sync features, sync server name (from Sync_ account / MSOL_ description / ADSync service).",
+  "gives": "Sync type, last sync time, sync features, sync server name (from Sync_ account / MSOL_ description / ADSync service). ExchangeOnPrem: On-prem federation trust, OAuth auth servers and partner applications - the hybrid plumbing on the Exchange side.",
   "manual": "Entra Connect Health (if licensed) for sync errors; record posture in STACK.md.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Everything else in identity depends on knowing where the source of truth is and that sync is not silently broken.",
+  "target": "Documented in STACK.md; sync healthy; owner of the sync server known."
  },
  {
   "id": "IAM-02",
@@ -29,7 +32,9 @@
   "e8": [
    "MFA"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Commodity credential attacks are the #1 initial access path (E8 ML1 MFA).",
+  "target": "100% of enabled users registered and enforced through CA; exclusions documented."
  },
  {
   "id": "IAM-03",
@@ -45,7 +50,9 @@
   "e8": [
    "MFA"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "E8 ML2 requires phishing-resistant MFA for privileged access; SMS/voice are trivially phished or SIM-swapped.",
+  "target": "All admin roles behind phishing-resistant auth strength; SMS/voice off."
  },
  {
   "id": "IAM-04",
@@ -55,14 +62,17 @@
   "auto": "Full",
   "collectors": [
    "Entra",
-   "Exchange"
+   "Exchange",
+   "ExchangeOnPrem"
   ],
-  "gives": "CA legacy-auth block policy, Security Defaults, successful legacy sign-ins last 7 days (P1), SMTP AUTH org setting, EXO authentication policies, CAS plan IMAP/POP defaults.",
+  "gives": "CA legacy-auth block policy, Security Defaults, successful legacy sign-ins last 7 days (P1), SMTP AUTH org setting, EXO authentication policies, CAS plan IMAP/POP defaults. ExchangeOnPrem: Basic authentication on Exchange virtual directories and Outlook Anywhere, plus POP/IMAP login types. On-prem Exchange has no Conditional Access, so these are not covered by the Entra legacy-auth block.",
   "manual": "Without P1: Entra portal > Sign-in logs filtered by legacy client apps.",
   "e8": [
    "MFA"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Legacy protocols bypass MFA entirely.",
+  "target": "Blocked; zero legacy successes in 30 days."
  },
  {
   "id": "IAM-05",
@@ -79,7 +89,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Standing global admin on daily-driver accounts is the most common tenant-loss pattern (E8 RAP).",
+  "target": "2-4 GAs; all admins dedicated accounts; least privilege roles; PIM if licensed."
  },
  {
   "id": "IAM-06",
@@ -95,7 +107,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Lock-out from a CA or MFA outage becomes a P1 without them; unmonitored ones are a backdoor.",
+  "target": "Two accounts, vaulted, alerting, tested."
  },
  {
   "id": "IAM-07",
@@ -111,7 +125,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "bA policy (KB0012228/KB0012557): named-account audit trail; shared accounts are an audit and insurance finding.",
+  "target": "GDAP least privilege; no DAP; no shared standing admin accounts."
  },
  {
   "id": "IAM-08",
@@ -125,7 +141,9 @@
   "gives": "Guest count, inactive guests, who can invite, guest role, cross-tenant default inbound setting.",
   "manual": "Access review configuration (Entra > Identity Governance) if P2.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Guests accumulate silently and retain access to Teams/SharePoint data indefinitely.",
+  "target": "No guest inactive > 90 days; invite restricted; review cadence exists."
  },
  {
   "id": "IAM-09",
@@ -142,7 +160,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Leavers with live accounts and orphaned service accounts are the quiet way in.",
+  "target": "Stale objects < 2%; JML documented; service account register current."
  },
  {
   "id": "IAM-10",
@@ -161,7 +181,9 @@
    "RAP",
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "An unhealthy or unhardened AD undermines every cloud control and is the ransomware pivot point.",
+  "target": "Healthy replication, supported DCs, KRBTGT < 180 d, legacy protocols off."
  },
  {
   "id": "IAM-11",
@@ -180,7 +202,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Reused/guessable passwords and shared local admin passwords enable lateral movement (E8 ML2: local admin creds unique and managed).",
+  "target": "Password Protection on; LAPS on all Windows endpoints and member servers."
  },
  {
   "id": "IAM-12",
@@ -196,7 +220,9 @@
   "e8": [
    "MFA"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "MFA alone does not stop token theft or access from unmanaged devices.",
+  "target": "Documented CA baseline with the four core policies enabled."
  },
  {
   "id": "IAM-13",
@@ -212,7 +238,9 @@
   "e8": [
    "MFA"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Licensed detection that nobody watches is a paid-for gap.",
+  "target": "Policies on; no unremediated risky users > 7 days; alerts monitored."
  },
  {
   "id": "IAM-14",
@@ -226,7 +254,9 @@
   "gives": "User consent setting, admin consent workflow, user-consented OAuth grants, app registration rights.",
   "manual": "SSO coverage of the client's key SaaS: compare Enterprise applications list with the client's SaaS register (AZ-08).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "OAuth consent phishing and orphaned SaaS logins bypass every device and MFA control.",
+  "target": "Consent restricted; workflow on; critical SaaS on SSO."
  },
  {
   "id": "M365-01",
@@ -240,7 +270,9 @@
   "gives": "Secure Score %, 90-day trend, largest improvement actions and category gaps.",
   "manual": "Status of last quarter's top-3 (LOG.md / last quarterly report).",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook expects top-3 priorities per customer per quarter; Secure Score is the shared yardstick with the client.",
+  "target": "Score trending up; last quarter's top-3 closed or re-planned with dates."
  },
  {
   "id": "M365-02",
@@ -250,12 +282,15 @@
   "auto": "Full",
   "collectors": [
    "DNS",
-   "Exchange"
+   "Exchange",
+   "ExchangeOnPrem"
   ],
-  "gives": "Per domain: MX/gateway, SPF (records, all-mechanism, lookup count), DKIM selectors live, DMARC policy/pct/rua, MTA-STS/TLS-RPT; EXO DKIM enabled per domain; parked-domain check.",
+  "gives": "Per domain: MX/gateway, SPF (records, all-mechanism, lookup count), DKIM selectors live, DMARC policy/pct/rua, MTA-STS/TLS-RPT; EXO DKIM enabled per domain; parked-domain check. ExchangeOnPrem: On-prem accepted domains and email address policies (what this server is authoritative for, and therefore what SPF must cover).",
   "manual": "DMARC aggregate report review (dmarcian/Mimecast); Mimecast DKIM selectors if not in the default selector list.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Spoofing of the client's own domain drives BEC losses; DMARC p=none is not protection.",
+  "target": "All domains SPF -all, DKIM aligned, DMARC p=quarantine or reject with reports reviewed."
  },
  {
   "id": "M365-03",
@@ -265,12 +300,15 @@
   "auto": "Full",
   "collectors": [
    "Exchange",
-   "DNS"
+   "DNS",
+   "ExchangeOnPrem"
   ],
-  "gives": "Preset security policies, anti-phish impersonation/mailbox intelligence, Safe Links/Attachments, malware/spam policies, inbound partner connector lock-down, gateway detection from MX/connectors.",
+  "gives": "Preset security policies, anti-phish impersonation/mailbox intelligence, Safe Links/Attachments, malware/spam policies, inbound partner connector lock-down, gateway detection from MX/connectors. ExchangeOnPrem: On-prem send/receive connectors, smart hosts, TLS requirements, and receive connectors permitting anonymous relay (including unrestricted 0.0.0.0-255.255.255.255 open relays).",
   "manual": "Mimecast policy configuration (Mimecast console).",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Email remains the top delivery channel; an open EXO connector lets attackers bypass the gateway.",
+  "target": "Gateway policies on for all users; MX bypass closed."
  },
  {
   "id": "M365-04",
@@ -280,12 +318,15 @@
   "auto": "Full",
   "collectors": [
    "Exchange",
-   "Entra"
+   "Entra",
+   "ExchangeOnPrem"
   ],
-  "gives": "Auto-forward settings (policy, remote domains, transport rules), mailbox forwarding to external domains, shared mailboxes with sign-in enabled, inactive mailboxes, audit state, SCL-bypass rules.",
+  "gives": "Auto-forward settings (policy, remote domains, transport rules), mailbox forwarding to external domains, shared mailboxes with sign-in enabled, inactive mailboxes, audit state, SCL-bypass rules. ExchangeOnPrem: On-prem transport rules that redirect/BCC/copy, remote domains allowing auto-forward, and mailbox-level forwarding on remaining on-prem mailboxes.",
   "manual": "Inbox rules per mailbox unless run with -CheckInboxRules.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Auto-forward rules are the classic post-compromise persistence; inactive licensed mailboxes are pure waste.",
+  "target": "Forwarding blocked; no unexplained external forwards; shared mailbox sign-in blocked."
  },
  {
   "id": "M365-05",
@@ -297,15 +338,18 @@
    "AD",
    "Exchange",
    "DNS",
-   "Servers"
+   "Servers",
+   "ExchangeOnPrem"
   ],
-  "gives": "Exchange server objects and versions in AD, hybrid objects in EXO, autodiscover/MX pointing on-prem, Exchange binaries on hosts.",
-  "manual": "-",
+  "gives": "Exchange server objects and versions in AD, hybrid objects in EXO, autodiscover/MX pointing on-prem, Exchange binaries on hosts. ExchangeOnPrem: On-prem Exchange servers with true build from ExSetup (security-update level, not just the CU), support status, hybrid configuration and HCW features, org relationships and intra-org connectors, mailboxes still hosted on-prem vs RemoteMailbox, public folders, and whether the server is management-only.",
+  "manual": "- Hybrid Agent (modern hybrid) publishing is not visible from Exchange - confirm in the M365 admin centre / on the agent host. Decommission decisions and Exchange SE licensing sit with the client.",
   "e8": [
    "PA",
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Unsupported Exchange is internet-facing, unpatched and directly exploitable.",
+  "target": "No unsupported Exchange; hybrid management path documented."
  },
  {
   "id": "M365-06",
@@ -320,7 +364,9 @@
   "gives": "Tenant sharing capability, external resharing, domain restriction, legacy auth protocols, idle session sign-out, unmanaged sync restriction; OWA third-party storage.",
   "manual": "SPO shell (Get-SPOTenant): RequireAnonymousLinksExpireInDays, DefaultSharingLinkType, ConditionalAccessPolicy; guest expiry; sensitivity labels on sites.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Over-permissive links are the most common M365 data leakage path and an easy insurer/auditor finding.",
+  "target": "Sharing restricted per policy; Anyone links off/expiring; defaults internal."
  },
  {
   "id": "M365-07",
@@ -334,7 +380,9 @@
   "gives": "Federation/allowed domains, consumer access, guest access, meeting anonymous join/lobby, app permission policy, third-party storage in Teams.",
   "manual": "Teams admin centre if the MicrosoftTeams module is not installed; team creation governance.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Open federation enables Teams-based phishing; uncontrolled apps and guests expand the attack surface.",
+  "target": "Deliberate, documented settings; no 'allow all' defaults left unreviewed."
  },
  {
   "id": "M365-08",
@@ -348,7 +396,9 @@
   "gives": "Retention policies and scope, DLP policies and mode, sensitivity/retention labels and policies, litigation holds, archives.",
   "manual": "Audit log retention policies (E5), mapping to the client's legal obligations.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Retention is not backup, but its absence is a legal/regulatory exposure; DLP catches the accidental send.",
+  "target": "Retention + baseline DLP in place and documented."
  },
  {
   "id": "M365-09",
@@ -362,7 +412,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Microsoft's shared-responsibility model leaves data recovery to the customer (E8 RB).",
+  "target": "100% coverage, jobs green, restore tested."
  },
  {
   "id": "M365-10",
@@ -377,7 +429,9 @@
   "gives": "SKU purchased vs assigned, unassigned paid seats, entitlement detection (P1/P2/Intune/Defender/Purview), licensed accounts with no sign-in, licensed shared mailboxes, inactive mailboxes.",
   "manual": "Active-usage reports (M365 admin centre > Usage); NCE renewal dates (eFO).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Clients pay for controls they do not use, or run controls they are not licensed for.",
+  "target": "< 5% unassigned; licensed security features deployed or consciously deferred."
  },
  {
   "id": "M365-11",
@@ -391,7 +445,9 @@
   "gives": "Message centre 'Plan for change' items last 90 days, major changes, action-required dates.",
   "manual": "Named owner; track relevant items in LOG.md.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Microsoft retires features on a schedule; surprises become incidents.",
+  "target": "Named owner; changes tracked."
  },
  {
   "id": "M365-12",
@@ -405,7 +461,9 @@
   "gives": "Tenant technical/security notification addresses; count of untriaged Defender alerts.",
   "manual": "Defender portal > Settings > Email notifications recipients; Huntress/Rapid7 M365 connector health.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Alerts sent to a departed admin's mailbox are alerts nobody sees.",
+  "target": "All alerts reach a monitored destination."
  },
  {
   "id": "END-01",
@@ -423,7 +481,9 @@
   "gives": "Intune device count/OS/stale/personal, Entra device count/trust/managed/compliant, host-check counts, AD computer objects.",
   "manual": "EDR console device count; HR headcount (PROFILE) for the reconciliation.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "You cannot patch, protect or wipe what you do not manage; coverage gaps are also BAMS billing gaps.",
+  "target": "Counts reconcile within 2%; every corporate device in MDM + RMM + EDR."
  },
  {
   "id": "END-02",
@@ -443,7 +503,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Unsupported OS = no security updates (E8 PO ML1: unsupported OS replaced).",
+  "target": "Zero unsupported OS without documented ESU/exception; rings defined."
  },
  {
   "id": "END-03",
@@ -460,7 +522,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Patch latency is the single largest measurable exposure.",
+  "target": ">= 95% within 30 days; < 5% stale; process documented."
  },
  {
   "id": "END-04",
@@ -478,7 +542,9 @@
   "e8": [
    "PA"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Browsers and PDF readers are the applications actually exploited on endpoints.",
+  "target": "Automated 3rd-party patching, >= 90% within 14 days, EoL apps removed."
  },
  {
   "id": "END-05",
@@ -493,7 +559,9 @@
    "PA",
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "E8 ML1 requires scanning (weekly apps, fortnightly OS) - patching without scanning is unverified.",
+  "target": ">= 98% coverage; no exploited criticals > 30 days."
  },
  {
   "id": "END-06",
@@ -508,7 +576,9 @@
   "gives": "EDR/AV product per host, hosts with none, Defender mode/tamper protection/signature age.",
   "manual": "EDR console inactive sensors; Huntress portal agent list; alert routing confirmation.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "EDR is the control that turns a breach into an alert; unhealthy sensors are invisible gaps. CrowdStrike removal needs a customer-generated key - know the process before a P1.",
+  "target": "100% coverage, < 2% inactive, tamper protection on."
  },
  {
   "id": "END-07",
@@ -524,7 +594,9 @@
   "gives": "Intune isEncrypted %, BitLocker recovery keys escrowed to Entra, OS-volume protection and recovery protector on hosts, encryption policies.",
   "manual": "-",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Lost laptops become notifiable data breaches without encryption evidence.",
+  "target": ">= 98% encrypted with escrowed keys."
  },
  {
   "id": "END-08",
@@ -544,7 +616,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Local admin defeats application control, EDR tamper protection and macro settings (E8 RAP).",
+  "target": "No standard users as local admin; LAPS 100%."
  },
  {
   "id": "END-09",
@@ -561,7 +635,9 @@
   "e8": [
    "AC"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Application control is the E8 control with the highest ransomware-prevention value and the one most often missing.",
+  "target": "Enforced on all workstations for the E8 file types; audit-mode only as a time-boxed step."
  },
  {
   "id": "END-10",
@@ -578,7 +654,9 @@
   "e8": [
    "MAC"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Macro-borne malware is still a leading delivery mechanism; user-changeable settings make the control cosmetic.",
+  "target": "All four ML1 requirements enforced; ML2 Win32 block on."
  },
  {
   "id": "END-11",
@@ -595,7 +673,9 @@
   "e8": [
    "UAH"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Closes the paths exploits and macros use to get from a document to a shell.",
+  "target": "ML1 browser controls + core ASR rules in block mode; logging on."
  },
  {
   "id": "END-12",
@@ -610,7 +690,9 @@
   "gives": "Compliance policies and settings, non-compliant device %, CA policies requiring compliance.",
   "manual": "-",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Compliance policies make device state enforceable through CA rather than advisory.",
+  "target": "< 5% non-compliant; CA-enforced."
  },
  {
   "id": "END-13",
@@ -624,7 +706,9 @@
   "gives": "Autopilot profiles/assignments, registered devices, ESP, ADMX profile count, autopilot-enrolled %.",
   "manual": "SOE document currency (SNOW KB / SharePoint); bA Autopilot & Intune checklist deviations.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Consistent builds are the foundation for every other endpoint control and cut ticket volume.",
+  "target": "Autopilot in use; SOE documented < 12 months old."
  },
  {
   "id": "END-14",
@@ -640,7 +724,9 @@
   "gives": "App protection policies (iOS/Android/Windows, PIN, save-as), mobile devices under MDM, enrolment restrictions, CA app-protection policy, Exchange mobile policy.",
   "manual": "BYOD stance document.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Corporate mail on unmanaged phones is the most common uncontrolled data copy.",
+  "target": "App protection enforced via CA for all mobile access."
  },
  {
   "id": "END-15",
@@ -657,7 +743,9 @@
   "e8": [
    "UAH"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Cheap controls that close common audit findings and lateral-movement paths.",
+  "target": "Policies deployed to all devices."
  },
  {
   "id": "END-16",
@@ -672,7 +760,9 @@
   "gives": "Manufacturer/model/serial per host (hosts.csv), Intune models.",
   "manual": "Warranty lookups by serial (Dell/HP), purchase dates, refresh plan (LIC-01 register).",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Ageing fleets generate tickets and block OS currency; refresh is billable project work.",
+  "target": "Register exists; refresh plan agreed; no device > 6 years in production."
  },
  {
   "id": "SRV-01",
@@ -690,7 +780,9 @@
   "gives": "Server lists from AD (active 60 days), reachable hosts, Azure VMs, vCenter VMs, Veeam inventory - one side of the reconciliation.",
   "manual": "SNOW CI export, eFO Cloud Services, Orion node list to diff against; raise CI corrections.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "CI gaps break monitoring, billing and P1 response (handbook: CI discrepancies form).",
+  "target": "Zero unexplained differences; all CIs complete."
  },
  {
   "id": "SRV-02",
@@ -702,14 +794,17 @@
    "AD",
    "Servers",
    "Azure",
-   "vSphere"
+   "vSphere",
+   "ExchangeOnPrem"
   ],
-  "gives": "OS families with support status and EoS dates from every source; legacy guests in vSphere.",
+  "gives": "OS families with support status and EoS dates from every source; legacy guests in vSphere. ExchangeOnPrem: Exchange server roles, editions and sites (Windows OS support for the same hosts comes from the Servers collector).",
   "manual": "-",
   "e8": [
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Unsupported OS breaches E8 PO ML1 and cyber-insurance conditions; 2016 is the next cliff for most clients.",
+  "target": "No EoS OS; migration plan with dates for anything within 12 months."
  },
  {
   "id": "SRV-03",
@@ -719,14 +814,17 @@
   "auto": "Full",
   "collectors": [
    "Servers",
-   "Azure"
+   "Azure",
+   "ExchangeOnPrem"
   ],
-  "gives": "Last-patch age, pending reboots, uptime, update source per server; Azure Update Manager assessment.",
-  "manual": "N-Central patch status per server; maintenance windows (STACK.md).",
+  "gives": "Last-patch age, pending reboots, uptime, update source per server; Azure Update Manager assessment. ExchangeOnPrem: Exchange security-update currency per server against the published build table - the CU-only version hides missing SUs.",
+  "manual": "N-Central patch status per server; maintenance windows (STACK.md). Confirm the current build table at aka.ms/exchangebuildnumbers; the collector's table is a point-in-time copy.",
   "e8": [
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Servers are patched less consistently than endpoints and are the higher-value target.",
+  "target": ">= 95% within 30 days; windows documented; exceptions listed."
  },
  {
   "id": "SRV-04",
@@ -735,15 +833,18 @@
   "control": "Server hardening baseline: CIS/Microsoft baseline, SMBv1 off, TLS 1.0/1.1 off, RDP not internet-exposed + NLA, EDR on servers, unnecessary roles removed, application control on internet-facing servers (E8 ML2)",
   "auto": "Full",
   "collectors": [
-   "Servers"
+   "Servers",
+   "ExchangeOnPrem"
   ],
-  "gives": "SMBv1, TLS 1.0/1.1, RDP NLA, firewall profiles, WDigest, NTLM level, UAC, spooler, EDR on servers, application control on servers, listeners.",
-  "manual": "Internet exposure of RDP (firewall NAT - see FortiGate NET-04); CIS baseline evidence.",
+  "gives": "SMBv1, TLS 1.0/1.1, RDP NLA, firewall profiles, WDigest, NTLM level, UAC, spooler, EDR on servers, application control on servers, listeners. ExchangeOnPrem: Windows Extended Protection per virtual directory vs the Microsoft-recommended values, SSL offloading on Outlook Anywhere, TLS 1.0/1.1/1.2 and LmCompatibilityLevel per Exchange server (and whether TLS is consistent across them), external URLs published on each virtual directory, and any Exchange setting overrides.",
+  "manual": "Internet exposure of RDP (firewall NAT - see FortiGate NET-04); CIS baseline evidence. Extended Protection and TLS are read over WinRM; where a server is unreachable, run the Exchange Health Checker (aka.ms/ExchangeHealthChecker) on it.",
   "e8": [
    "AC",
    "RAP"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Default builds carry known-weak protocols; internet-facing servers are the E8 ML2 application-control scope.",
+  "target": "Baseline applied and evidenced; no exposed RDP; EDR 100% on servers."
  },
  {
   "id": "SRV-05",
@@ -760,7 +861,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "E8 ML2 requires jump servers and separate privileged environments; flat admin access is how ransomware spreads.",
+  "target": "Jump-host-only admin, dedicated tiered accounts, DA <= 5."
  },
  {
   "id": "SRV-06",
@@ -777,7 +880,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "The hypervisor is a single point of failure for the whole estate and a licensing cost risk.",
+  "target": "Supported version, N+1, no stale snapshots, licensing current."
  },
  {
   "id": "SRV-07",
@@ -793,7 +898,9 @@
   "gives": "Current cluster CPU/memory utilisation, >= 8 vCPU VMs, low-space volumes, Advisor right-sizing.",
   "manual": "90-day trends and forecast: Orion capacity reports / vCenter performance charts.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Capacity surprises become emergency purchases; right-sizing is a visible value-add (and billable in emPOWER terms).",
+  "target": ">= 6 months headroom; right-sizing recommendations issued."
  },
  {
   "id": "SRV-08",
@@ -807,7 +914,9 @@
   "gives": "Non-admin shares per server and share-level ACLs granting Change/Full to Everyone/Authenticated Users/Domain Users.",
   "manual": "NTFS ACL audit of top-level folders; DFS-R health (dfsrdiag / Get-DfsrState); SharePoint Migration Assessment.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Open shares are the ransomware blast radius and the data-governance blind spot.",
+  "target": "No broad-write shares; DFS healthy; migration position documented."
  },
  {
   "id": "SRV-09",
@@ -818,15 +927,18 @@
   "collectors": [
    "Servers",
    "AD",
-   "Veeam"
+   "Veeam",
+   "ExchangeOnPrem"
   ],
-  "gives": "SQL instances/versions/editions with support status, hosts advertising SQL SPNs, Veeam application-aware processing.",
+  "gives": "SQL instances/versions/editions with support status, hosts advertising SQL SPNs, Veeam application-aware processing. ExchangeOnPrem: Exchange mailbox databases, mount state, DAG membership and copy/content-index health.",
   "manual": "Recovery model vs backup type (SQL query); LoB vendor support contracts.",
   "e8": [
    "PO",
    "RB"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Line-of-business apps are why the client exists; SQL EoS and untested backups are the risk.",
+  "target": "Supported SQL; backups match recovery model; app owners known."
  },
  {
   "id": "SRV-10",
@@ -837,12 +949,15 @@
   "collectors": [
    "Servers",
    "AD",
-   "DNS"
+   "DNS",
+   "ExchangeOnPrem"
   ],
-  "gives": "Expiring/expired certificates with private keys on servers, enterprise CAs and hosts, CAA records.",
+  "gives": "Expiring/expired certificates with private keys on servers, enterprise CAs and hosts, CAA records. ExchangeOnPrem: Exchange certificates with expiry and self-signed-bound-to-IIS detection, plus the OAuth (Auth) certificate expiry - the one that silently breaks hybrid free/busy and OWA/ECP sign-in.",
   "manual": "pkiview.msc / certutil -URL for CRL/AIA health; GeoCerts inventory; ACME automation plan.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Expired certificates cause outages; manual renewal will not scale as lifetimes shrink.",
+  "target": "Inventory current; nothing expiring < 30 days unowned; automation plan for public certs."
  },
  {
   "id": "SRV-11",
@@ -857,7 +972,9 @@
   "gives": "DNS scavenging/aging/forwarders, DHCP scopes utilisation/failover, PDC and member-server time sources.",
   "manual": "-",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Quiet services that cause loud outages (Kerberos time skew, scope exhaustion).",
+  "target": "All three healthy and documented."
  },
  {
   "id": "SRV-12",
@@ -874,7 +991,9 @@
   "e8": [
    "PA"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Print spooler and remote-desktop farms are recurring CVE targets and licence-compliance traps.",
+  "target": "Hardened, licensed, supported."
  },
  {
   "id": "SRV-13",
@@ -888,7 +1007,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Linux boxes are often 'someone else's' and fall outside the Windows-centric patch and monitoring loops.",
+  "target": "All Linux hosts supported, patched, monitored, backed up."
  },
  {
   "id": "NET-01",
@@ -902,7 +1023,9 @@
   "gives": "AD sites and subnet count for comparison with the diagram.",
   "manual": "SharePoint diagram revision date; Netbox prefixes vs live config; circuit register.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook: network changes require diagram updates; incidents without a diagram take twice as long.",
+  "target": "Diagram < 12 months and accurate; IPAM current; circuits documented."
  },
  {
   "id": "NET-02",
@@ -918,7 +1041,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Fortinet edge devices are actively exploited within days of PSIRT advisories; unmanaged firmware is the top network risk.",
+  "target": "Supported model, current recommended firmware, HA (or documented risk), management locked down."
  },
  {
   "id": "NET-03",
@@ -932,7 +1057,9 @@
   "gives": "Policy table: any/any, logging disabled, internet-bound policies without UTM profiles, zero-hit policies, geo usage.",
   "manual": "SSL inspection posture; FortiAnalyzer 90-day hit history if live counters were reset.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Policy sprawl hides risky rules; unlogged rules blind the SIEM.",
+  "target": "Clean policy set with profiles and logging on every internet-bound rule."
  },
  {
   "id": "NET-04",
@@ -950,7 +1077,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Exposed services and legacy VPN portals are the initial access of choice for ransomware crews.",
+  "target": "Only justified services exposed, behind IPS; VPN modern and MFA-protected."
  },
  {
   "id": "NET-05",
@@ -966,7 +1095,9 @@
   "e8": [
    "MFA"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "VPN without MFA is the cheapest credential-stuffing target on the internet (E8 MFA).",
+  "target": "MFA on all remote access; no standing local VPN accounts."
  },
  {
   "id": "NET-06",
@@ -980,7 +1111,9 @@
   "gives": "Interfaces referenced by policies and count of inter-VLAN accept policies.",
   "manual": "Switch VLAN configuration; diagram; guest/IoT isolation test.",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Flat networks turn one infected laptop into a whole-of-business outage.",
+  "target": "Segmented with default-deny between zones; guest/IoT isolated."
  },
  {
   "id": "NET-07",
@@ -994,7 +1127,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Access-layer neglect causes the intermittent faults that consume service-desk time.",
+  "target": "Supported firmware; 802.1X for corporate Wi-Fi; licences > 90 days."
  },
  {
   "id": "NET-08",
@@ -1008,7 +1143,9 @@
   "gives": "FortiAnalyzer/syslog shipping and NTP on the firewall.",
   "manual": "Orion node list vs device inventory (SNMPv3); NCM/FortiManager config backups; Rapid7 log sources.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Unmonitored network devices are diagnosed by user complaints.",
+  "target": "100% of network devices monitored, backed up and logging."
  },
  {
   "id": "NET-09",
@@ -1022,7 +1159,9 @@
   "gives": "Site-to-site tunnel list.",
   "manual": "SD-WAN/dual-WAN configuration, failover test records, carrier SLAs (PROFILE sites).",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Cloud-first clients lose everything when the single link drops.",
+  "target": "Critical sites have tested failover; SPOFs accepted in writing or planned."
  },
  {
   "id": "NET-10",
@@ -1036,7 +1175,9 @@
   "gives": "NS provider, CAA, DNSSEC, MTA-STS/TLS-RPT per domain.",
   "manual": "TPP Wholesale: expiry, registrar lock, contacts; EasyDNS zone export for dangling records.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Domain loss or hijack is total business outage; dangling CNAMEs are free phishing infrastructure.",
+  "target": "Locked, current, clean zone, CAA set."
  },
  {
   "id": "NET-11",
@@ -1048,7 +1189,9 @@
   "gives": "-",
   "manual": "Switch configs (802.1X/MAB, port security, unused ports disabled); NAC console (FortiNAC/Meraki/ClearPass).",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Anyone who can plug in should not get the server VLAN.",
+  "target": "Port-level control on user-accessible ports."
  },
  {
   "id": "NET-12",
@@ -1062,7 +1205,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Legacy PBX and OT devices are unpatched Linux boxes with vendor remote access.",
+  "target": "Supported, isolated, vendor access controlled."
  },
  {
   "id": "BDR-01",
@@ -1079,7 +1224,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "The item nobody added to the job is the one that gets encrypted (E8 RB).",
+  "target": "100% of production protected; contract matches reality."
  },
  {
   "id": "BDR-02",
@@ -1095,7 +1242,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "A green dashboard with 40 days of warnings is a failed backup in waiting.",
+  "target": ">= 98% success; no failure unactioned > 24 h."
  },
  {
   "id": "BDR-03",
@@ -1111,7 +1260,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Without agreed targets, every restore conversation becomes a dispute.",
+  "target": "Documented, agreed, and matching configuration."
  },
  {
   "id": "BDR-04",
@@ -1128,7 +1279,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Modern ransomware deletes backups first; E8 ML1 requires backups protected from modification/deletion.",
+  "target": "Immutable offsite copy; backup infrastructure isolated from production AD."
  },
  {
   "id": "BDR-05",
@@ -1144,7 +1297,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "E8 RB ML1: restoration tested as part of DR exercises. Untested backups are hope, not a control.",
+  "target": "Evidence of restore tests <= 6 months; DR test <= 12 months."
  },
  {
   "id": "BDR-06",
@@ -1155,14 +1310,17 @@
   "collectors": [
    "Veeam",
    "AD",
-   "vSphere"
+   "vSphere",
+   "ExchangeOnPrem"
   ],
-  "gives": "Jobs without application-aware processing, last AD system-state backup per partition (repadmin /showbackup), long-lived snapshots.",
+  "gives": "Jobs without application-aware processing, last AD system-state backup per partition (repadmin /showbackup), long-lived snapshots. ExchangeOnPrem: Mailbox database LastFullBackup age and circular logging state - evidence that an Exchange-aware backup is actually running and truncating logs.",
   "manual": "DC snapshot-revert prohibition documented.",
   "e8": [
    "RB"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Crash-consistent images of databases and DCs restore into corruption.",
+  "target": "App-aware on all DB/AD workloads; AD recoverable."
  },
  {
   "id": "BDR-07",
@@ -1179,7 +1337,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Desktop and Documents folders are where the finance spreadsheets actually live.",
+  "target": "KFM enforced; unsanctioned storage addressed."
  },
  {
   "id": "BDR-08",
@@ -1193,7 +1353,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Backups without a plan produce a 5-day outage instead of a 5-hour one.",
+  "target": "Current plan, configured failover for tier-1, annual review."
  },
  {
   "id": "BDR-09",
@@ -1211,7 +1373,9 @@
    "RB",
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "The backup server is often the oldest, least-patched box in the room.",
+  "target": "Supported, licensed, >= 6 months capacity."
  },
  {
   "id": "BDR-10",
@@ -1225,7 +1389,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Rebuilding a tenant's Conditional Access from memory during an incident is not a plan.",
+  "target": "All platforms exported <= 30 days, stored securely."
  },
  {
   "id": "COV-01",
@@ -1243,7 +1409,9 @@
   "gives": "Inventories to diff against the billing extract: AD servers, Intune devices, host results (hosts.csv), Azure VMs.",
   "manual": "PowerBI 'eFO People or Items in My Org - with ROLES'; eFO Cloud Services; SNOW CIs; raise differences with SDM/CAM.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook priority 13 (quarterly). Revenue leakage and billing for decommissioned items both damage the relationship.",
+  "target": "Zero unexplained differences; corrections raised."
  },
  {
   "id": "COV-02",
@@ -1258,7 +1426,9 @@
   "gives": "Hosts unreachable over WinRM (management gaps), Azure alert rules/action groups.",
   "manual": "Orion node list vs inventory; unmanaged/muted nodes with reasons; Catalogue Tasks for onboarding.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Unmonitored = discovered by the client. Handbook: validate monitoring before handover.",
+  "target": "100% of in-scope CIs monitored; muted list clean."
  },
  {
   "id": "COV-03",
@@ -1270,7 +1440,9 @@
   "gives": "-",
   "manual": "Orion application monitors for tier-1 apps, 30-day alert history/top alerters, NOC runbooks (SNOW KB), certificate/backup monitors.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Noisy or shallow monitoring trains the NOC to ignore the real one.",
+  "target": "Service-level monitoring for all tier-1 apps; noise actioned."
  },
  {
   "id": "COV-04",
@@ -1288,7 +1460,9 @@
    "PO",
    "PA"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Patching only works on the devices the tool can see.",
+  "target": "100% policy membership; < 3% stale agents; exclusions dated."
  },
  {
   "id": "COV-05",
@@ -1305,7 +1479,9 @@
   "gives": "EDR/MDR/RMM/app-control agent coverage per host with missing lists; Intune remote tools; Defender alert backlog.",
   "manual": "Licensed seat counts (eFO subscriptions) vs deployed; Rapid7 IDR data-collection health; Huntress portal; Airlock/Mimecast seat counts.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Paid-for seats not deployed are both a security gap and an awkward renewal conversation.",
+  "target": "Deployed = licensed = devices; all core log sources live."
  },
  {
   "id": "COV-06",
@@ -1317,7 +1493,9 @@
   "gives": "-",
   "manual": "SNOW incident report (last 90 days by CI/category), SLA breaches, problem records; PROBLEMS.md signatures.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Recurring incidents are the cheapest improvement opportunities and the client's lived experience of bA.",
+  "target": "Top repeat issues have problem records and owners."
  },
  {
   "id": "COV-07",
@@ -1329,7 +1507,9 @@
   "gives": "-",
   "manual": "SNOW change records vs FortiManager/NCM revision history; CI updates after builds/decoms.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Undocumented change is the most common root cause in post-incident reviews.",
+  "target": "Changes traceable to RFCs; drift reviewed monthly."
  },
  {
   "id": "COV-08",
@@ -1346,7 +1526,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "bA's own access is part of the client's attack surface and is in scope for their auditors.",
+  "target": "Only current staff, rotated credentials, GDAP > 90 days."
  },
  {
   "id": "COV-09",
@@ -1358,7 +1540,9 @@
   "gives": "-",
   "manual": "SNOW customer account contacts, PROFILE.md, vendor contracts/support numbers, CrowdStrike uninstall-key process.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "P1s are lost in the first 30 minutes looking for a phone number.",
+  "target": "Verified in last 6 months."
  },
  {
   "id": "COV-10",
@@ -1370,7 +1554,9 @@
   "gives": "-",
   "manual": "Report folder (SharePoint), LOG.md meeting entries, COMMITMENTS.md, PROFILE.md meeting cadence.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Reports that are generated but not discussed are cost without value; the cadence is where billable work is agreed.",
+  "target": "Cadence held; actions tracked to closure."
  },
  {
   "id": "SEC-01",
@@ -1384,7 +1570,9 @@
   "gives": "Secure Score category gaps as a conversation starter.",
   "manual": "Client's agreed E8 target and exceptions register (PROFILE.md strategic notes / board paper).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "A target turns the E8 from a scorecard into a plan and makes remediation fundable.",
+  "target": "Target agreed in writing; exceptions documented."
  },
  {
   "id": "SEC-02",
@@ -1400,7 +1588,9 @@
   "gives": "MDR agent coverage per host (Huntress/Rapid7), Defender alert backlog and age.",
   "manual": "Huntress / Rapid7 IDR console: coverage, log sources, response hours, alert-to-action times, retention.",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "E8 ML2 expects events analysed in a timely manner; detection without response capacity is theatre.",
+  "target": "Coverage 100%, defined response, core sources logging."
  },
  {
   "id": "SEC-03",
@@ -1421,7 +1611,9 @@
    "MFA",
    "AC"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Without protected central logs, incident scope cannot be determined and insurers will not pay.",
+  "target": "Central, protected, >= 12 months, ML2 event classes captured."
  },
  {
   "id": "SEC-04",
@@ -1440,7 +1632,9 @@
    "PA",
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "E8 ML1 mandates scanning cadence; unowned findings age silently.",
+  "target": "Full-scope scanning on cadence; SLAs met; exceptions dated."
  },
  {
   "id": "SEC-05",
@@ -1452,7 +1646,9 @@
   "gives": "-",
   "manual": "LionGard / Rapid7 external scan for unknown assets; HIBP domain search; DMARC reports for look-alike domains (domain list is in raw/dns.domains.json).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Attackers start from the outside; so should the review.",
+  "target": "No unknown external assets; breached credentials remediated."
  },
  {
   "id": "SEC-06",
@@ -1464,7 +1660,9 @@
   "gives": "-",
   "manual": "Training platform reports (Huntress SAT / KnowBe4 / Defender Attack Simulation); report-message add-in deployment.",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Users are the control of last resort for BEC and consent phishing.",
+  "target": "Quarterly campaigns; click rate trending down; reporting in use."
  },
  {
   "id": "SEC-07",
@@ -1476,7 +1674,9 @@
   "gives": "-",
   "manual": "IR plan and bA runbook (SNOW KB), insurer conditions (client), tabletop record (LOG.md).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "E8 ML2 requires an IR plan to be enacted; insurers now audit the conditions they underwrote.",
+  "target": "Plan < 12 months, insurer conditions evidenced, tabletop annually."
  },
  {
   "id": "SEC-08",
@@ -1493,7 +1693,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "RAP is the E8 strategy most dependent on process rather than product; process is what auditors test.",
+  "target": "Process evidenced; no stale privileged accounts; admins isolated from email/web."
  },
  {
   "id": "SEC-09",
@@ -1505,7 +1707,9 @@
   "gives": "-",
   "manual": "Client policy set and review dates; obligations (Privacy Act, APRA CPS 234, SOCI, ISO 27001, PCI); insurance renewal month.",
   "e8": [],
-  "tag": "Client-owned"
+  "tag": "Client-owned",
+  "why": "Drivers determine the target maturity and who pays for remediation.",
+  "target": "Drivers documented; policies < 24 months old."
  },
  {
   "id": "SEC-10",
@@ -1517,7 +1721,9 @@
   "gives": "-",
   "manual": "Site visit / Field Services report; UPS management card in Orion (battery age, runtime).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "A failed UPS battery is the most common cause of an unplanned full outage in mid-market.",
+  "target": "Monitored UPS with batteries < 4 years; controlled access; environmental alerts."
  },
  {
   "id": "SEC-11",
@@ -1531,7 +1737,9 @@
   "gives": "Secure Score improvement actions with unrealised points, ranked.",
   "manual": "Disposition of the last monthly Defender report; risk-accepted items marked in the portal.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Handbook: Defender recommendations are outside BAMS remediation scope - they are the billable pipeline if tracked, noise if not.",
+  "target": "Every recommendation has a disposition and owner."
  },
  {
   "id": "SEC-12",
@@ -1551,7 +1759,9 @@
    "AC",
    "RAP"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Vendor remote tools are the supply-chain door left open; application control should close the unsanctioned ones.",
+  "target": "Every vendor path documented, MFA'd and reviewed; unsanctioned tools blocked."
  },
  {
   "id": "AZ-01",
@@ -1565,7 +1775,9 @@
   "gives": "Subscriptions, resource counts, tag coverage, locks, management groups, Lighthouse registrations.",
   "manual": "-",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Ungoverned subscriptions grow cost and risk quietly; Lighthouse (KB0016370) is how bA supports them properly.",
+  "target": "Documented, tagged >= 90%, locked, delegated."
  },
  {
   "id": "AZ-02",
@@ -1582,7 +1794,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Subscription Owner is the cloud equivalent of Domain Admin.",
+  "target": "Least privilege, group-based, PIM'd; secrets tracked."
  },
  {
   "id": "AZ-03",
@@ -1596,7 +1810,9 @@
   "gives": "6-month spend by month, budgets per subscription, Advisor cost savings, orphaned disks/NICs/IPs, stopped-not-deallocated VMs, Hybrid Benefit usage.",
   "manual": "-",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Cloud cost optimisation is the most welcome value-add conversation a PE can start.",
+  "target": "Budget alerts on; Advisor cost items dispositioned; no orphaned spend."
  },
  {
   "id": "AZ-04",
@@ -1613,7 +1829,9 @@
    "RAP",
    "PO"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Exposed management ports and public storage are the two most exploited Azure misconfigurations.",
+  "target": "No internet-exposed management ports; storage locked; diagnostics on; plans enabled for tier-1."
  },
  {
   "id": "AZ-05",
@@ -1629,7 +1847,9 @@
   "e8": [
    "RB"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Cloud does not mean backed up; E8 RB applies equally to IaaS.",
+  "target": "100% VM coverage; immutable; tier-1 DR configured."
  },
  {
   "id": "AZ-06",
@@ -1643,7 +1863,9 @@
   "gives": "Public IP inventory, storage/Key Vault network defaults.",
   "manual": "Network Watcher topology, VPN/ExpressRoute redundancy, private endpoints per PaaS service, private DNS design.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Cloud networks accumulate the same flat-network problems as on-prem, faster.",
+  "target": "Documented, segmented, private endpoints for data services, redundant connectivity."
  },
  {
   "id": "AZ-07",
@@ -1659,7 +1881,9 @@
   "e8": [
    "PO"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Azure resources without alert routing are unmonitored in every way that matters (COV-02 for cloud).",
+  "target": "Alerts to bA, patching scheduled, policy baseline assigned."
  },
  {
   "id": "AZ-08",
@@ -1678,7 +1902,9 @@
    "MFA",
    "RB"
   ],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "The ERP in someone's credit-card SaaS is a business risk nobody owns.",
+  "target": "Register exists; tier-1 SaaS on SSO with backup; shadow IT reviewed."
  },
  {
   "id": "DOC-01",
@@ -1690,7 +1916,9 @@
   "gives": "-",
   "manual": "SNOW Knowledge per-customer KBs (last modified vs last change), SharePoint Technical folder, Confluence legacy content.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook priority 14; stale docs are the first thing a P1 exposes.",
+  "target": "All critical docs within currency windows; nothing critical left in Confluence only."
  },
  {
   "id": "DOC-02",
@@ -1702,7 +1930,9 @@
   "gives": "-",
   "manual": "SharePoint Technical docs diagrams (version/date) and SNOW KB links.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook: network changes must update diagrams and fix links to versioned docs.",
+  "target": "Current, versioned, linked."
  },
  {
   "id": "DOC-03",
@@ -1716,7 +1946,9 @@
   "e8": [
    "RAP"
   ],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Credentials in KBs and tickets are the finding that ends a contract.",
+  "target": "Zero credentials outside the vault; rotation evidenced."
  },
  {
   "id": "DOC-04",
@@ -1728,7 +1960,9 @@
   "gives": "-",
   "manual": "SNOW KB coverage of the top recurring ticket types, P1 runbooks, problem records.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook escalation rule: would better documentation have prevented this? Usually yes.",
+  "target": "KBs for top-5; P1 runbooks complete; problem records raised."
  },
  {
   "id": "DOC-05",
@@ -1745,7 +1979,9 @@
   "gives": "Inventories with OS/IP/role that serve as the truth side for CI accuracy.",
   "manual": "SNOW CMDB sample of 10 CIs; eFO/SNOW sync gaps; tier-1 dependency map.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "CI quality drives impact assessment in change and incident; the sync gap is a known handbook issue.",
+  "target": "Complete CIs; tier-1 dependency map; no sync gaps."
  },
  {
   "id": "DOC-06",
@@ -1760,7 +1996,9 @@
   "gives": "GPO inventory and unlinked GPOs, Intune update rings (patch windows).",
   "manual": "SOE/build standards, naming conventions, maintenance calendar, decommission guide (SNOW KB / SharePoint).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Standards make work repeatable by any engineer, not just the one who knows.",
+  "target": "All six exist and match practice."
  },
  {
   "id": "DOC-07",
@@ -1772,7 +2010,9 @@
   "gives": "-",
   "manual": "PROFILE.md contacts/roles, RACI in SoW; informal admins (use IAM-05 and local-admin evidence as prompts).",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "The most fragile part of most environments is one person.",
+  "target": "SPOKs named and mitigated; RACI documented."
  },
  {
   "id": "DOC-08",
@@ -1784,7 +2024,9 @@
   "gives": "-",
   "manual": "Licence register (SharePoint Commercial), eFO annuity, vendor portals; collectors supply Entra SKUs and Veeam/vSphere/FortiGate licence data as inputs.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Renewal surprises and true-up exposure are avoidable with a register.",
+  "target": "Register complete; every renewal owned."
  },
  {
   "id": "DOC-09",
@@ -1796,7 +2038,9 @@
   "gives": "-",
   "manual": "OPPORTUNITIES.md, COMMITMENTS.md, notification emails/Teams messages to SDM and CAM.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Handbook priority 5: risks -> SDM & CAM. A risk not written down is bA's risk.",
+  "target": "All High risks notified and dispositioned."
  },
  {
   "id": "LIC-01",
@@ -1813,7 +2057,9 @@
   "gives": "Manufacturer/model/serial per host and hypervisor host hardware (inputs to the register).",
   "manual": "Warranty lookups (Dell/HP) by serial, Fortinet/Meraki/Aruba EoS, purchase dates, FY budget mapping.",
   "e8": [],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "Refresh projects are the most predictable billable pipeline and the most avoidable outages.",
+  "target": "Register current; nothing out of support without a plan."
  },
  {
   "id": "LIC-02",
@@ -1828,15 +2074,18 @@
    "Azure",
    "vSphere",
    "Veeam",
-   "FortiGate"
+   "FortiGate",
+   "ExchangeOnPrem"
   ],
-  "gives": "OS/SQL/Exchange/vSphere/Veeam/FortiOS versions with support status and EoS dates where known.",
+  "gives": "OS/SQL/Exchange/vSphere/Veeam/FortiOS versions with support status and EoS dates where known. ExchangeOnPrem: Exchange version and end-of-support date per server for the lifecycle register.",
   "manual": "Consolidate into the register; vendor lifecycle pages for network gear and LoB apps.",
   "e8": [
    "PO",
    "PA"
   ],
-  "tag": "Billable"
+  "tag": "Billable",
+  "why": "E8 PO/PA require unsupported software removed; planning 12 months out turns emergencies into projects.",
+  "target": "Register current; every < 12-month item has a plan."
  },
  {
   "id": "LIC-03",
@@ -1853,7 +2102,9 @@
   "gives": "FortiGuard/FortiCare, vSphere and Veeam licence expiry; M365 SKU list.",
   "manual": "eFO annuity (NCE anniversaries), Meraki/Aruba Central, EDR/Huntress/Rapid7/Mimecast terms, GeoCerts, TPP.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Lapsed FortiGuard or Central licences silently disable security features; NCE terms lock pricing.",
+  "target": "Calendar complete; nothing lapses unplanned."
  },
  {
   "id": "LIC-04",
@@ -1869,7 +2120,9 @@
   "gives": "Unassigned M365 seats, licensed inactive/shared mailboxes, Hybrid Benefit, Advisor savings.",
   "manual": "RDS CALs, SQL core licensing vs VMs, VMware subscription terms.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Both over-spend and non-compliance are findings the client will thank you for.",
+  "target": "No material non-compliance; savings identified and proposed."
  },
  {
   "id": "LIC-05",
@@ -1881,7 +2134,9 @@
   "gives": "-",
   "manual": "Roadmap document / last technology report, OPPORTUNITIES.md, eFO leads.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "Handbook priority 15: find billable items -> leads. A roadmap is the structured version of that.",
+  "target": "Roadmap exists, current, and every item has a lead or decision."
  },
  {
   "id": "LIC-06",
@@ -1893,7 +2148,9 @@
   "gives": "-",
   "manual": "PROFILE.md (FY, budget month), SDM briefing, growth signals; M365 storage reports.",
   "e8": [],
-  "tag": "Value-add"
+  "tag": "Value-add",
+  "why": "A good proposal delivered after the budget closes waits a year.",
+  "target": "Budget window known; proposals timed."
  },
  {
   "id": "LIC-07",
@@ -1905,7 +2162,9 @@
   "gives": "-",
   "manual": "SoW/BAMS schedule vs LOG.md billable fields and SNOW time entries; unused inclusions; SLA misfit examples.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Scope drift is unbilled effort on one side and churn risk on the other.",
+  "target": "Scope matches reality; leakage quantified and raised."
  },
  {
   "id": "LIC-08",
@@ -1917,6 +2176,8 @@
   "gives": "-",
   "manual": "OPPORTUNITIES.md / client risk register, COMMITMENTS.md, notification dates.",
   "e8": [],
-  "tag": "BAU"
+  "tag": "BAU",
+  "why": "Closes the loop on the review: every High finding becomes a decision someone owns.",
+  "target": "All P1/P2 findings dispositioned."
  }
 ]

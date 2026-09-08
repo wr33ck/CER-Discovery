@@ -9,7 +9,7 @@ Client Environment Review (CER) methodology.
 |---|---|
 | `Invoke-CERDiscovery.ps1` | Orchestrator — entry point, `-Scope` selects which collectors run |
 | `lib/` | Shared evidence/coverage/logging model (`CER.Common.ps1`, `CER.HostEvidence.ps1`) |
-| `collectors/` | One script per data source (Entra, Intune, Exchange Online, DNS, Teams, Azure, AD, Windows Servers, vSphere, Veeam, FortiGate) |
+| `collectors/` | One script per data source (Entra, Intune, Exchange Online, DNS, Teams, Azure, AD, on-prem/hybrid Exchange, Windows Servers, vSphere, Veeam, FortiGate) |
 | `agent/` | Standalone host-level local check, deployable via RMM (no dependency on `lib/`) |
 | `build/` | `New-CEREvidencePack.ps1` — merges all collector output into the evidence pack |
 | `mapping/controls-map.json` | Control-by-control automation coverage (auto/partial/manual, and where to find manual data) |
@@ -30,36 +30,115 @@ complete breakdown.
 See the full walkthrough below for prerequisites. Shortest path:
 
 ```powershell
-.\Invoke-CERDiscovery.ps1 -Scope Entra,Intune,Exchange,DNS
+.\Invoke-CERDiscovery.ps1 -Client C-003 -Scope Entra,Intune,Exchange,DNS
 ```
 
-Output lands in `output/<timestamp>/` — `evidence.csv`, `AutoEvidence.csv`
+Note `Exchange` means Exchange **Online**; the on-prem/hybrid server is `ExchangeOnPrem`.
+
+Output lands in `output/<client>/<run-id>/` — `evidence.csv`, `AutoEvidence.csv`
 (paste-ready for the workbook's AutoEvidence tab), `coverage.md`, `summary.html`.
 
 ---
 
-# CER-Discovery v1.0
+# CER-Discovery v1.1
 
 Scripted evidence collection for the **Client Environment Review** (124 controls, 11 domains). It pulls what admin
-access can reach — Entra/M365, Intune, Exchange Online/Purview, public DNS, Azure, on-prem AD, Windows servers over WinRM,
-every endpoint via an RMM-deployed local check, and optionally vSphere, Veeam and FortiGate — and writes one evidence pack
-per client run. It **does not score**: it tells you what it saw (with counts and names), flags what needs attention, and
-says plainly which controls it could not cover and where that data lives.
+access can reach — Entra/M365, Intune, Exchange Online/Purview, public DNS, Azure, on-prem AD, on-prem/hybrid Exchange,
+Windows servers over WinRM, every endpoint via an RMM-deployed local check, and optionally vSphere, Veeam and FortiGate —
+and writes one evidence pack per client run. It **does not score**: it tells you what it saw (with counts and names),
+flags what needs attention, and says plainly which controls it could not cover and where that data lives.
 
-Coverage at v1.0: **60 controls fully automated, 35 partly, 29 manual** (see `Client-Environment-Review-Tool-Coverage-Matrix-v1.0.docx`
+Coverage at v1.1: **60 controls fully automated, 35 partly, 29 manual** (see `Client-Environment-Review-Tool-Coverage-Matrix-v1.0.docx`
 or `mapping/controls-map.json`). Everything it finds is *input* to the workbook; you still decide the score.
+v1.1 adds the `ExchangeOnPrem` collector against the existing control set — no control IDs changed, so the workbook
+and both Word deliverables are unaffected.
 
 ```
 CER-Discovery/
   Invoke-CERDiscovery.ps1          orchestrator (runs collectors, then builds the pack)
   collectors/  Get-CEREntra.ps1 · Get-CERIntune.ps1 · Get-CERExchangeOnline.ps1 · Get-CERDns.ps1 · Get-CERTeams.ps1 · Get-CERAzure.ps1
-               Get-CERActiveDirectory.ps1 · Get-CERWindowsServers.ps1 · Get-CERvSphere.ps1 · Get-CERVeeam.ps1 · Get-CERFortiGate.ps1
+               Get-CERActiveDirectory.ps1 · Get-CERExchangeHybrid.ps1 · Get-CERWindowsServers.ps1 · Get-CERvSphere.ps1
+               Get-CERVeeam.ps1 · Get-CERFortiGate.ps1
   agent/       Invoke-CERLocalHostCheck.ps1 (RMM-deployable, no dependencies) · Import-CERLocalHostResults.ps1
   build/       New-CEREvidencePack.ps1 (evidence.csv, AutoEvidence.csv, coverage.md, summary.html)
-  lib/         CER.Common.ps1 (evidence/coverage model, Graph paging, lifecycle tables) · CER.HostEvidence.ps1 (fleet roll-ups)
+  build/       Sync-CERControlText.ps1 (pulls Why it matters / Target state from the workbook into the control map)
+  lib/         CER.Common.ps1 (evidence/coverage model, run-folder resolution, Graph paging, lifecycle tables) · CER.HostEvidence.ps1 (fleet roll-ups)
   mapping/     controls-map.json (control -> collectors, what the tool gives, where the rest lives)
   output/      <client>/<run-id>/ raw/ evidence/ coverage/ hosts/ logs/ + the pack files
 ```
+
+## One review, one run folder
+
+`New-CEREvidencePack.ps1` merges **one** run folder and nothing else, so every collector for a review has to write
+into the same `output\<client>\<run-id>\`. Two things used to break that silently, and both are fixed in v1.1:
+
+* the output root defaulted to the **caller's working directory**, so the same command from a different prompt wrote
+  a different tree. It now resolves from the toolkit folder (override with `-OutputRoot` or `$env:CER_OUTPUT_ROOT`);
+* an omitted `-RunId` minted a **fresh timestamp**, so a collector run on its own forked a new folder that the pack
+  never saw. An omitted `-RunId` now reuses the newest run for that client if it started within the last 12 hours
+  (`$env:CER_RUN_REUSE_HOURS` to change it), and says so on screen. `-NewRun` forces a fresh run id.
+
+Pass `-RunId` explicitly for a multi-machine review — it is still the reliable way. If evidence does end up in the
+wrong folder, the pack builder now says so, lists the orphaned runs in `coverage.md` and `summary.html`, and prints the
+`Copy-Item` + rebuild commands to merge them.
+
+## Reading summary.html
+
+The report is a single self-contained page — no CDN, no external requests, safe to open from a share or email to
+yourself. It has a sticky toolbar: free-text filter across control IDs, titles, evidence and hostnames; flag filters
+(Attention / OK / Info / Unknown); and Expand detail to open every disclosure at once. Print CSS opens all detail and
+drops the controls, so Ctrl+P gives a clean PDF.
+
+Evidence lines are written as `Label: value; Label: value; ...`. The report splits them on the semicolons into labelled
+bullets and puts anything past the fourth fact behind a "N more" disclosure, so a 700-character line reads as a short
+list instead of a paragraph. The full text is always in `evidence.csv` and the raw JSON.
+
+Every finding now reads as four things: **what was found** (the evidence), **why it matters** and **target state**
+(quoted from the workbook Checklist), and **recommended** (what to do about this specific finding).
+
+## Why it matters, target state, and recommended actions
+
+Three different things, from three different places, deliberately kept apart:
+
+| Shown as | Source | Scope |
+|---|---|---|
+| **Why it matters** | Workbook Checklist, column *Why it matters* | Per control — your wording, quoted |
+| **Target state** | Workbook Checklist, column *Target state (baseline = score 2)* | Per control — your wording, quoted |
+| **Recommended** | `Add-CEREvidence -Action` in the collector | Per **finding** — written against what actually tripped the threshold |
+
+The first two are quoted from the workbook, never re-written here, so there is one source of truth and it is the
+workbook. Refresh the copy in `controls-map.json` after editing the workbook:
+
+```powershell
+.\build\Sync-CERControlText.ps1              # -WhatIf to preview, -Workbook to point at another file
+```
+
+That script reads the .xlsx directly as zipped XML — no Excel, no ImportExcel module, no Python — so it runs on the bA
+laptop and on a jump host, and it re-indents `controls-map.json` to match the committed style so the diff stays readable.
+
+**Recommended** is authored per finding, in the collector, next to the threshold logic that raised the flag — because
+that is the only place that knows *which* thing tripped. KRBTGT at 412 days earns "rotate it twice, 24 h apart", not a
+general paragraph about AD hardening. 214 of the 215 evidence lines carry one (the exception is "no on-prem Exchange
+found", where there is nothing to recommend). They are a **starting point to tailor, not a decision** — the tool still
+does not score, and the client-specific recommendation is still yours to write into the workbook's Recommendation
+column, which feeds Findings and Roadmap.
+
+`evidence.csv` gains `WhyItMatters`, `TargetState` and `RecommendedActions` (de-duplicated, worst flag first).
+`AutoEvidence.csv` keeps its existing seven columns in the existing order, so the workbook paste is unaffected.
+
+It also carries an **Evidence by collector** table. Findings are filed under the 11 review domains, never by collector,
+so that table is the only place a given collector's contribution is visible — if AD or ExchangeOnPrem ran and produced
+nothing, that is where it shows.
+
+### One JSON caveat worth knowing
+
+Evidence written by a collector on **Windows PowerShell 5.1** (a DC or jump host) can come back from
+`ConvertFrom-Json` as a *single* object whose `Control` / `Flag` / `Evidence` / `Collector` fields are parallel arrays,
+rather than as N separate rows. Left alone that is poison: `$_.Control -eq 'IAM-10'` against an array returns the
+matching elements instead of `$false`, so one collapsed entry matches **every** control and the report repeats the same
+wall of text under all of them. The pack builder now normalises every entry on load (`Expand-CEREvidence`), unzipping
+the parallel arrays back into rows and noting on the console when it had to. Nothing needs doing on the collector side,
+and hand-merged evidence files are covered by the same guard.
 
 ## Output per run (`output\<client>\<yyyyMMdd-HHmm>\`)
 
@@ -88,6 +167,14 @@ On-prem collectors run on a **domain-joined jump host or DC** (Windows PowerShel
 GroupPolicy, DnsServer, DhcpServer modules. WinRM must reach the servers (it usually does inside the estate; unreachable
 hosts are reported as a finding, not an error). The Veeam collector needs the Veeam console/PowerShell module (run it on the VBR server).
 
+The **ExchangeOnPrem** collector needs the Exchange Management Shell. Either run it on the Exchange server itself from EMS
+(simplest, and the only way to read the true build number from `ExSetup.exe` — `Get-ExchangeServer` shows the cumulative
+update only and hides missing security updates), or run it anywhere domain-joined with `-ExchangeServer <fqdn>`, which opens
+an implicit remoting session to `http://<fqdn>/PowerShell/` over Kerberos. The account needs a remote-PowerShell-enabled
+mailbox and **View-Only Organization Management** (Organization Management also works). Extended Protection and TLS are read
+over WinRM against each Exchange server; skip with `-SkipExchangeIisChecks`. Skip the whole collector where the client has
+no on-prem Exchange — the AD collector already proves absence from the configuration partition.
+
 Access, per bA practice (KB0012228 / KB0012557): your named `Admin.<F>.<Lastname>` account over **GDAP**. Roles that make
 everything readable: **Global Reader + Security Reader** (Exchange/Purview/Intune/Secure Score/LAPS/BitLocker keys all read
 under those). Azure: **Reader** on the subscriptions via Azure Lighthouse (connect to the bA tenant) or directly.
@@ -107,7 +194,9 @@ that can, then re-run.
     -AzureTenantId <bA tenant id for Lighthouse>          # omit if the client has no Azure
 
 # 2. On-prem pass (jump host / DC as domain admin) - same client and run id, any output root
-.\Invoke-CERDiscovery.ps1 -Client C-003 -Scope OnPrem -RunId 20260905-0900 -OutputRoot D:\CER\output -IncludeDomainControllers
+#    OnPrem = AD + ExchangeOnPrem + Servers
+.\Invoke-CERDiscovery.ps1 -Client C-003 -Scope OnPrem -RunId 20260905-0900 -OutputRoot D:\CER\output -IncludeDomainControllers `
+    -ExchangeServer exch01.contoso.local        # omit if the client has no on-prem Exchange
 #    add -IncludeWindowsUpdateSearch for a live Windows Update scan on each server (+30-120 s per host)
 
 # 3. Endpoints via RMM: deploy agent\Invoke-CERLocalHostCheck.ps1 (below), then import the JSON drops
@@ -154,6 +243,7 @@ The same function runs over WinRM for servers, so results are identical either w
 | Teams | M365-07 | Optional module |
 | Azure | AZ-01..07, BDR-01, SRV-02/03, NET-04, LIC-04 | Resource Graph for inventory/security/backup/cost; REST for budgets, Defender plans, diagnostics, 6-month cost |
 | AD | IAM-01/05/09/10/11, SRV-02/05/09/10/11/12, END-02/08, M365-05, BDR-06, SEC-08, DOC-06, NET-01 | Run on DC/jump host. Also queries each DC over WinRM for SMBv1/LDAP signing/channel binding (skip with `-SkipDcRemote`) |
+| ExchangeOnPrem | M365-02/03/04/05, IAM-01/04, SRV-02/03/04/09/10, BDR-06, LIC-02 | **Beta.** Exchange Management Shell, on the server or via `-ExchangeServer`. Builds and SU currency, hybrid + OAuth certificate, connectors and anonymous relay, virtual directory exposure and Basic auth, Extended Protection and TLS, databases and backup dates, on-prem mailbox residual |
 | Servers | SRV-*, END-* (servers), COV-02/04/05, SEC-02/03/12, IAM-10 (DCs) | WinRM fan-out of the host check; unreachable hosts listed |
 | Endpoints | END-*, SEC-02/03/12, COV-04/05, BDR-07, END-16 | Import of RMM host-check JSON |
 | vSphere | SRV-06/07, SRV-02, BDR-06 | Optional (PowerCLI) |
@@ -183,6 +273,16 @@ covered by the host check.
 * The host check reads HKLM policies plus loaded user hives; per-user Office policies of users not logged on are not visible.
 * FortiGate: only `monitor/system/status`, `cmdb/firewall/policy`, `monitor/firewall/policy` and token auth are confirmed
   from documentation; other paths are derived from the CLI tree and may differ between firmware branches — treat as beta.
+* ExchangeOnPrem is **beta** on the same basis: cmdlets and properties are verified against Microsoft Learn (8 Sep 2026)
+  but it has not been run against a live hybrid estate. Property names vary across Exchange versions, so treat the first
+  run's output as something to check rather than something to quote.
+* The Exchange build table in `lib/CER.Common.ps1` (`$script:CERExchangeLatest`) is a point-in-time copy of the published
+  build numbers, verified 8 Sep 2026. A stale table under-reports missing security updates, which is the entire point of
+  the check — refresh it from aka.ms/exchangebuildnumbers when the SU currency finding matters.
+* Extended Protection is an IIS setting, not an Exchange one, so it is read over WinRM with the WebAdministration module.
+  Where a server is unreachable the control is reported Unknown, not OK — run aka.ms/ExchangeHealthChecker on it instead.
+* Whether an Exchange virtual directory with an external URL is genuinely reachable from the internet depends on firewall
+  policy, a WAF, or the Hybrid Agent. The collector reports the published URL and says so; confirm actual exposure.
 * Veeam immutability is read by property discovery (`*mmutab*`) because property names differ across versions.
 * No throttling back-off beyond what the SDKs do; on 429s re-run the collector (it overwrites its own files only).
 
@@ -194,6 +294,34 @@ Graph `GET /directory/deviceLocalCredentials` (v1.0), `GET /admin/sharepoint/set
 14 Oct 2025 — Microsoft Lifecycle; vSphere 7 EoGS 2 Oct 2025 — Broadcom KB; SSL-VPN tunnel mode removed in FortiOS 7.6.3 —
 Fortinet docs; FortiGate REST `access_token` / `monitor/firewall/policy hit_count` — Fortinet docs and field guides.
 
+### Added for v1.1 (8 Sep 2026, all Microsoft Learn)
+
+* Exchange Server build numbers and release dates — latest builds Exchange Server SE RTM Aug26SU `15.2.2562.46`,
+  Exchange 2019 CU15 Aug26SU `15.2.1748.49` / CU14 Aug26SU `15.2.1544.44`, Exchange 2016 CU23 Aug26SU `15.1.2507.72`
+  (all 11 Aug 2026). Exchange 2016 and 2019 are out of support; Dec 2025 and later SUs need the paid ESU programme.
+  `Get-Command ExSetup.exe | %{$_.FileVersionInfo}` gives the true build; `Get-ExchangeServer -AdminDisplayVersion`
+  shows the CU only and hides SUs.
+* Configure Windows Extended Protection in Exchange Server — `tokenChecking` values None/Allow/Require; recommended per
+  front-end virtual directory (API/ECP/MAPI/OWA `Required`, EWS/ActiveSync/OAB `Allow`, AutoDiscover `None`), sslFlags
+  `Ssl,Ssl128`; on by default from Exchange 2019 CU14; requires SSL offloading off for Outlook Anywhere, consistent TLS
+  across all Exchange servers, and `LmCompatibilityLevel` ≥ 3.
+* Maintain the Exchange Server OAuth certificate — `(Get-AuthConfig).CurrentCertificateThumbprint | Get-ExchangeCertificate`;
+  expiry breaks hybrid free/busy and OWA/ECP sign-in; rotate at least 48 h ahead.
+* Allow anonymous relay on Exchange servers / Receive connectors in Exchange Server — the two ways relay is granted:
+  `PermissionGroups AnonymousUsers` plus `ms-Exch-SMTP-Accept-Any-Recipient` to `NT AUTHORITY\ANONYMOUS LOGON`, or
+  `AuthMechanism ExternalAuthoritative` with `PermissionGroups ExchangeServers`.
+* `Get-HybridConfiguration` — on-premises only.
+
 ## Version
+
+1.1 — 8 Sep 2026 — added the `ExchangeOnPrem` collector (on-prem / hybrid Exchange) against the existing 124 controls;
+shared `Get-CERExchangeSupport` lifecycle helper; fixed the run-folder fork that let a standalone collector write into a
+run folder the evidence pack never merged, with orphan-run detection and an Evidence-by-collector view to make it
+visible; normalised evidence JSON on load so a PowerShell 5.1 round-trip can no longer collapse a collector's rows into
+one entry that matches every control; rebuilt `summary.html` — filter/search toolbar, evidence split into labelled facts
+with progressive disclosure, print stylesheet, still a single self-contained file. Trimmed the `repadmin /showbackup`
+evidence line, which was dumping raw dSASignature GUIDs into the report. Added justification and recommendation to every
+finding: `Why it matters` and `Target state` synced from the workbook Checklist by `build\Sync-CERControlText.ps1`, and a
+per-finding `-Action` on 214 of the 215 evidence lines across all twelve collectors.
 
 1.0 — 5 Sep 2026 — initial release. blueAPACHE Portfolio Engineering (Bikash Shrestha). Internal tool; not for distribution to clients.

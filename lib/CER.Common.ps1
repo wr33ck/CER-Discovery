@@ -15,6 +15,57 @@ Set-StrictMode -Off
 $ErrorActionPreference = 'Continue'
 $script:CER = $null
 $script:CERSectionOverride = $null
+# Toolkit root = the folder holding lib/, collectors/, build/. Resolved from this file, never from the
+# caller's working directory - a collector started from any prompt must land in the same output tree.
+$script:CERToolkitRoot = Split-Path $PSScriptRoot -Parent
+
+function Resolve-CERRunTarget {
+    <#
+      Decides the OutputRoot and RunId for a collector run, and says out loud which it picked.
+      A run folder is only useful if every collector for the review writes into the SAME one -
+      New-CEREvidencePack merges one folder and nothing else. Two traps used to make that silently fail:
+        * OutputRoot defaulted to the caller's working directory, so the same command from a different
+          prompt wrote a different tree;
+        * an omitted -RunId minted a fresh timestamp, so a collector run on its own forked a new folder.
+      Precedence - OutputRoot: -OutputRoot > $env:CER_OUTPUT_ROOT > <toolkit root>\output
+                   RunId:      -RunId > newest run folder for this client younger than $ReuseWithinHours
+                               (unless -NewRun) > new timestamp
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Client,
+        [string]$OutputRoot,
+        [string]$RunId,
+        [switch]$NewRun,
+        [int]$ReuseWithinHours = 12
+    )
+    if (-not $OutputRoot) { $OutputRoot = $env:CER_OUTPUT_ROOT }
+    if (-not $OutputRoot) { $OutputRoot = Join-Path $script:CERToolkitRoot 'output' }
+    if ($env:CER_RUN_REUSE_HOURS -and ($env:CER_RUN_REUSE_HOURS -as [int])) { $ReuseWithinHours = [int]$env:CER_RUN_REUSE_HOURS }
+    $clientDir = Join-Path $OutputRoot $Client
+    $note = ''
+    if ($RunId) {
+        $note = 'run id supplied'
+    } else {
+        $existing = @()
+        if (Test-Path -LiteralPath $clientDir) {
+            $existing = @(Get-ChildItem -LiteralPath $clientDir -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -match '^\d{8}-\d{4}$' } | Sort-Object Name -Descending)
+        }
+        $newest = $existing | Select-Object -First 1
+        $ageH = if ($newest) { ((Get-Date) - $newest.CreationTime).TotalHours } else { [double]::MaxValue }
+        if ($newest -and -not $NewRun -and $ageH -le $ReuseWithinHours) {
+            $RunId = $newest.Name
+            $note = ("reusing the newest run for {0} ({1:n1} h old) so this collector joins the same pack - use -NewRun for a fresh run id, or -RunId to target another" -f $Client, $ageH)
+        } else {
+            $RunId = Get-Date -Format 'yyyyMMdd-HHmm'
+            if ($newest -and $NewRun) { $note = ("new run id forced (-NewRun); newest existing run is {0}" -f $newest.Name) }
+            elseif ($newest) { $note = ("new run id; newest existing run {0} is {1:n1} h old (older than the {2} h reuse window)" -f $newest.Name, $ageH, $ReuseWithinHours) }
+            else { $note = 'first run for this client' }
+        }
+    }
+    return [pscustomobject]@{ OutputRoot = $OutputRoot; RunId = $RunId; RunDir = (Join-Path $clientDir $RunId); Note = $note }
+}
 
 function Initialize-CERRun {
     [CmdletBinding()]
@@ -22,11 +73,13 @@ function Initialize-CERRun {
         [Parameter(Mandatory)][string]$Client,
         [string]$OutputRoot,
         [string]$Collector = 'run',
-        [string]$RunId
+        [string]$RunId,
+        [switch]$NewRun
     )
-    if (-not $OutputRoot) { $OutputRoot = Join-Path (Get-Location).Path 'output' }
-    if (-not $RunId) { $RunId = Get-Date -Format 'yyyyMMdd-HHmm' }
-    $runDir = Join-Path (Join-Path $OutputRoot $Client) $RunId
+    $target = Resolve-CERRunTarget -Client $Client -OutputRoot $OutputRoot -RunId $RunId -NewRun:$NewRun
+    $OutputRoot = $target.OutputRoot
+    $RunId = $target.RunId
+    $runDir = $target.RunDir
     foreach ($sub in @('', 'raw', 'evidence', 'coverage', 'logs', 'hosts')) {
         $d = if ($sub) { Join-Path $runDir $sub } else { $runDir }
         if (-not (Test-Path -LiteralPath $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
@@ -42,9 +95,12 @@ function Initialize-CERRun {
         Started   = Get-Date
         Host      = $env:COMPUTERNAME
         User      = $env:USERNAME
-        ToolVersion = '1.0'
+        ToolVersion = '1.1'
     }
-    Write-CERLog ("Run initialised  client={0}  run={1}  collector={2}  dir={3}" -f $Client, $RunId, $Collector, $runDir)
+    Write-CERLog ("Run initialised  client={0}  run={1}  collector={2}" -f $Client, $RunId, $Collector)
+    Write-CERLog ("Writing to: {0}" -f $runDir)
+    if ($target.Note) { Write-CERLog ("Run id: {0}" -f $target.Note) }
+    Write-CERLog 'Every collector for this review must write into that same folder - the evidence pack merges one folder only.'
     return $script:CER
 }
 
@@ -63,12 +119,24 @@ function Write-CERLog {
 }
 
 function Add-CEREvidence {
-    <# One evidence line for one control. Keep Evidence factual and numeric; the reviewer scores it. #>
+    <#
+      One evidence line for one control.
+
+      -Evidence stays strictly factual and numeric: what was seen, with counts and names. It never argues.
+      -Action is the separate, optional half: the recommended next step for THIS finding, written against
+      what actually tripped the threshold rather than against the control in general. "KRBTGT last set 412
+      days ago" earns "rotate it twice, 24 h apart", not a paragraph about AD hardening.
+
+      The justification ("why it matters") and the baseline ("target state") are NOT written here - they
+      are per-control and come from the review workbook via mapping/controls-map.json, so there is one
+      source of truth for them and it is the workbook. The reviewer still decides the score.
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Control,
         [Parameter(Mandatory)][ValidateSet('OK', 'Attention', 'Info', 'Unknown')][string]$Flag,
         [Parameter(Mandatory)][string]$Evidence,
+        [string]$Action,
         [string]$Source,
         [object]$Data
     )
@@ -77,6 +145,7 @@ function Add-CEREvidence {
         Control   = $Control
         Flag      = $Flag
         Evidence  = $Evidence
+        Action    = $Action
         Source    = if ($Source) { $Source } else { $script:CER.Collector }
         Collector = $script:CER.Collector
         Timestamp = (Get-Date).ToString('s')
@@ -243,6 +312,61 @@ function Get-CERWindowsSupport {
         elseif ($major -eq '6.1') { $r.Family = 'Windows Server 2008 R2'; $r.Supported = $false; $r.EndOfSupport = '14 Jan 2020' }
         elseif ($major -eq '6.0') { $r.Family = 'Windows Server 2008'; $r.Supported = $false; $r.EndOfSupport = '14 Jan 2020' }
         else { $r.Family = $Caption }
+    }
+    return [pscustomobject]$r
+}
+
+# Exchange build -> family, support status, and the latest serviced build.
+# Verified 08/09/2026 against Microsoft Learn "Exchange Server build numbers and release dates"
+# (https://learn.microsoft.com/exchange/new-features/build-numbers-and-release-dates). KEEP THIS CURRENT -
+# a stale table under-reports missing security updates, which is the whole point of the check.
+$script:CERExchangeBuildsVerified = '08/09/2026'
+$script:CERExchangeLatest = @{
+    # family = @{ CU build = @{ Rev = latest revision; Name = release name; Date = release date } }
+    'Exchange Server SE' = @{ 2562 = @{ Rev = 46; Name = 'SE RTM Aug26SU'; Date = '11 Aug 2026' } }
+    'Exchange 2019'      = @{ 1748 = @{ Rev = 49; Name = 'CU15 Aug26SU'; Date = '11 Aug 2026' }
+                              1544 = @{ Rev = 44; Name = 'CU14 Aug26SU'; Date = '11 Aug 2026' } }
+    'Exchange 2016'      = @{ 2507 = @{ Rev = 72; Name = 'CU23 Aug26SU'; Date = '11 Aug 2026' } }
+}
+function Get-CERExchangeSupport {
+    <#
+      Accepts any Exchange version string - 'Version 15.2 (Build 1748.10)' from Get-ExchangeServer,
+      '15.02.1748.037' from ExSetup.exe, or the serialNumber on the AD msExchExchangeServer object.
+      ExSetup gives the true build including SUs/HUs; AdminDisplayVersion shows the CU only, so a server
+      can look current on AdminDisplayVersion while missing every security update since. Callers should
+      pass the ExSetup build where they can get it and set -CuOnly when they cannot.
+    #>
+    param([string]$Version, [switch]$CuOnly)
+    $r = [ordered]@{ Family = $Version; Supported = $true; EndOfSupport = ''; Build = ''; Cu = 0; Rev = 0
+        LatestKnown = ''; LatestName = ''; UpToDate = $null; RevisionsBehind = $null; Note = '' }
+    $nums = @([regex]::Matches("$Version", '\d+') | ForEach-Object { [int]$_.Value })
+    # Supported stays $null for anything we cannot place - never default an unreadable version to "supported",
+    # that turns a gap in the evidence into a clean bill of health.
+    if ($nums.Count -lt 3) { $r.Supported = $null; $r.Family = 'Exchange (version not recognised)'; $r.Note = ("Version string '{0}' not recognised - read the build from ExSetup.exe on the server." -f $Version); return [pscustomobject]$r }
+    $maj = $nums[0]; $min = $nums[1]; $cu = $nums[2]; $rev = if ($nums.Count -ge 4) { $nums[3] } else { 0 }
+    $r.Cu = $cu; $r.Rev = $rev; $r.Build = ('{0}.{1}.{2}.{3}' -f $maj, $min, $cu, $rev)
+    if ($maj -eq 15 -and $min -eq 2 -and $cu -ge 2562) { $r.Family = 'Exchange Server SE' }
+    elseif ($maj -eq 15 -and $min -eq 2) { $r.Family = 'Exchange 2019'; $r.Supported = $false; $r.EndOfSupport = '14 Oct 2025'
+        $r.Note = 'Out of support. Security updates from Dec 2025 only under the paid Extended Security Update (ESU) programme; otherwise migrate to Exchange Server SE.' }
+    elseif ($maj -eq 15 -and $min -eq 1) { $r.Family = 'Exchange 2016'; $r.Supported = $false; $r.EndOfSupport = '14 Oct 2025'
+        $r.Note = 'Out of support. Security updates from Dec 2025 only under the paid ESU programme; otherwise migrate to Exchange Server SE.' }
+    elseif ($maj -eq 15 -and $min -eq 0) { $r.Family = 'Exchange 2013'; $r.Supported = $false; $r.EndOfSupport = '11 Apr 2023'; $r.Note = 'Out of support, no ESU. Remove or migrate.' }
+    elseif ($maj -eq 14) { $r.Family = 'Exchange 2010'; $r.Supported = $false; $r.EndOfSupport = '13 Oct 2020'; $r.Note = 'Out of support, no ESU. Remove or migrate.' }
+    elseif ($maj -eq 8) { $r.Family = 'Exchange 2007'; $r.Supported = $false; $r.EndOfSupport = '11 Apr 2017'; $r.Note = 'Out of support, no ESU. Remove or migrate.' }
+    else { $r.Family = "Exchange (build $($r.Build))"; $r.Supported = $null; $r.Note = 'Unknown Exchange family - verify against Microsoft Lifecycle.' }
+    $fam = $script:CERExchangeLatest[$r.Family]
+    if ($fam) {
+        if ($fam.ContainsKey($cu)) {
+            $l = $fam[$cu]
+            $r.LatestKnown = ('{0}.{1}.{2}.{3}' -f $maj, $min, $cu, $l.Rev); $r.LatestName = ('{0} ({1})' -f $l.Name, $l.Date)
+            if ($CuOnly) { $r.Note = (('{0} Build read from the CU only - SU/HU level unknown; run "Get-Command ExSetup.exe | %{{$_.FileVersionInfo}}" on the server.' -f $r.Note)).Trim() }
+            else { $r.UpToDate = ($rev -ge $l.Rev); $r.RevisionsBehind = [math]::Max(0, $l.Rev - $rev) }
+        } else {
+            $newest = ($fam.Keys | Sort-Object -Descending | Select-Object -First 1)
+            $r.LatestKnown = ('{0}.{1}.{2}.{3}' -f $maj, $min, $newest, $fam[$newest].Rev); $r.LatestName = ('{0} ({1})' -f $fam[$newest].Name, $fam[$newest].Date)
+            $r.UpToDate = $false
+            $r.Note = (('{0} Cumulative update {1} is not one of the serviced builds - no security updates are published for it.' -f $r.Note, $cu)).Trim()
+        }
     }
     return [pscustomobject]$r
 }
