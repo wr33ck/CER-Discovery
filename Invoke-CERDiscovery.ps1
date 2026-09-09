@@ -46,7 +46,7 @@ param(
     [string]$CitrixAdminAddress,
     [string]$NetScaler, [int]$NetScalerPort = 443, [pscredential]$NetScalerCredential, [switch]$NetScalerSkipCertificateCheck,
     [string]$RasServer, [pscredential]$RasCredential,
-    [switch]$NewRun, [switch]$NoBuild
+    [switch]$NewRun, [switch]$NoBuild, [switch]$NoWorkbook
 )
 $ErrorActionPreference = 'Continue'
 $here = $PSScriptRoot
@@ -111,4 +111,7 @@ foreach ($c in $run) {
     }
 }
 $results | Format-Table -AutoSize | Out-String | Write-Host
-if (-not $NoBuild) { & (Join-Path $here 'build/New-CEREvidencePack.ps1') -RunDir (Join-Path (Join-Path $OutputRoot $Client) $RunId) }
+if (-not $NoBuild) {
+    & (Join-Path $here 'build/New-CEREvidencePack.ps1') -RunDir (Join-Path (Join-Path $OutputRoot $Client) $RunId)
+    if (-not $NoWorkbook) { & (Join-Path $here 'build/New-CERWorkbook.ps1') -RunDir (Join-Path (Join-Path $OutputRoot $Client) $RunId) }
+}

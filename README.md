@@ -11,7 +11,7 @@ Client Environment Review (CER) methodology.
 | `lib/` | Shared evidence/coverage/logging model (`CER.Common.ps1`, `CER.HostEvidence.ps1`) |
 | `collectors/` | One script per data source (Entra, Intune, Exchange Online, DNS, Teams, Azure, AD, DHCP, NPS, on-prem/hybrid Exchange, Windows Servers, vSphere, Veeam, FortiGate, NetScaler, Citrix, Parallels RAS) |
 | `agent/` | Standalone host-level local check, deployable via RMM (no dependency on `lib/`) |
-| `build/` | `New-CEREvidencePack.ps1` — merges all collector output into the evidence pack |
+| `build/` | `New-CEREvidencePack.ps1` — merges all collector output into the evidence pack; `New-CERWorkbook.ps1` — builds a standalone Excel workbook from it (one tab per domain) |
 | `mapping/controls-map.json` | Control-by-control automation coverage (auto/partial/manual, and where to find manual data) |
 | `samples/hosts/` | Synthetic fixtures — try the host-evidence pipeline with zero live access |
 | `deliverables/` | The Client Environment Review workbook (v1.2) and the two Word deliverables (Method & Report Template v1.1, Tool Coverage Matrix v1.1) this toolkit feeds |
@@ -36,7 +36,9 @@ See the full walkthrough below for prerequisites. Shortest path:
 Note `Exchange` means Exchange **Online**; the on-prem/hybrid server is `ExchangeOnPrem`.
 
 Output lands in `output/<client>/<run-id>/` — `evidence.csv`, `AutoEvidence.csv`
-(paste-ready for the workbook's AutoEvidence tab), `coverage.md`, `summary.html`.
+(paste-ready for the workbook's AutoEvidence tab), `coverage.md`, `summary.html`, and an Excel
+workbook (`Client-Environment-Review-<client>-<run-id>.xlsx`, one tab per domain — see
+"Reading the Excel workbook" below). Add `-NoWorkbook` to `Invoke-CERDiscovery.ps1` to skip it.
 
 ---
 
@@ -67,6 +69,7 @@ CER-Discovery/
                Get-CERNetScaler.ps1 · Get-CERCitrix.ps1 · Get-CERParallelsRas.ps1
   agent/       Invoke-CERLocalHostCheck.ps1 (RMM-deployable, no dependencies) · Import-CERLocalHostResults.ps1
   build/       New-CEREvidencePack.ps1 (evidence.csv, AutoEvidence.csv, coverage.md, summary.html)
+  build/       New-CERWorkbook.ps1 (standalone .xlsx built from evidence.csv - Summary + Attention + one tab per domain)
   build/       Sync-CERControlText.ps1 (pulls Why it matters / Target state from the workbook into the control map)
   lib/         CER.Common.ps1 (evidence/coverage model, run-folder resolution, Graph paging, lifecycle tables) · CER.HostEvidence.ps1 (fleet roll-ups)
   mapping/     controls-map.json (control -> collectors, what the tool gives, where the rest lives)
@@ -101,6 +104,27 @@ list instead of a paragraph. The full text is always in `evidence.csv` and the r
 
 Every finding now reads as four things: **what was found** (the evidence), **why it matters** and **target state**
 (quoted from the workbook Checklist), and **recommended** (what to do about this specific finding).
+
+## Reading the Excel workbook
+
+`New-CERWorkbook.ps1` runs automatically after `New-CEREvidencePack.ps1` (part of `Invoke-CERDiscovery.ps1`'s
+normal build step - skip it with `-NoWorkbook`, or run it on its own against an existing run:
+`.\build\New-CERWorkbook.ps1 -Client C-003`). It writes the .xlsx directly as a zip of OOXML parts - no
+Excel, no ImportExcel module - the same no-dependency approach `Sync-CERControlText.ps1` uses to *read* a
+workbook, so it needs nothing installed on the bA laptop or a jump host.
+
+It reshapes `evidence.csv`, it does not re-derive anything, so run `New-CEREvidencePack.ps1` first if
+`evidence.csv` is missing. Tabs:
+
+* **Summary** - client/run/collectors, controls by status, controls by domain, evidence by collector.
+* **Attention** - every control with an Attention finding, across all domains, in one filterable list.
+* **One tab per domain** (tab name = the domain's short code - IAM, M365, END, NET, SRV, BDR, COV, SEC, AZ,
+  DOC, LIC) - every control in that domain with its evidence, why it matters, target state, recommended
+  action and where to find the rest, one row per control. Header row is frozen with autofilter on; row
+  fill colour follows the worst Flag on the control (Attention/OK/Info/Unknown), the same colours
+  `summary.html` uses for its chips.
+
+Same confidentiality rule as everything else under `output/`: real names and hostnames, keep it local.
 
 ## Why it matters, target state, and recommended actions
 
@@ -154,6 +178,7 @@ and hand-merged evidence files are covered by the same guard.
 | `AutoEvidence.csv` | Same, in the column order of the workbook's **AutoEvidence** tab — paste from A2 and the Checklist's *Tool status* / *Tool evidence* columns fill themselves |
 | `coverage.md` | What ran, which sections failed and why (no access / not licensed / module missing), the not-run and manual lists with the place to look |
 | `summary.html` | Readable report: Attention findings first, then every control by domain with its evidence and the manual pointer |
+| `Client-Environment-Review-<client>-<run-id>.xlsx` | Standalone Excel workbook built by `New-CERWorkbook.ps1` from `evidence.csv` - Summary tab (counts by status/domain/collector), Attention tab (every Attention finding across domains), then one tab per review domain, coloured by Flag |
 | `hosts.csv` | One line per host from the host check (OS, patch age, EDR, LAPS, local admins, SMBv1, TLS, AppLocker, macro policy, SQL, shares, serial) |
 | `raw/*.json` | Everything the collectors pulled, per section — the audit trail behind each evidence line |
 
