@@ -795,9 +795,11 @@
    "Servers",
    "Azure",
    "vSphere",
-   "ExchangeOnPrem"
+   "ExchangeOnPrem",
+   "Citrix",
+   "ParallelsRas"
   ],
-  "gives": "OS families with support status and EoS dates from every source; legacy guests in vSphere. ExchangeOnPrem: Exchange server roles, editions and sites (Windows OS support for the same hosts comes from the Servers collector).",
+  "gives": "OS families with support status and EoS dates from every source; legacy guests in vSphere. ExchangeOnPrem: Exchange server roles, editions and sites (Windows OS support for the same hosts comes from the Servers collector). Citrix and ParallelsRas: the session-host and VDA hostnames to reconcile against the Servers collector - these carry every user session, so an out-of-support build here has the widest blast radius in the estate.",
   "manual": "-",
   "e8": [
    "PO"
@@ -950,9 +952,11 @@
    "Servers",
    "AD",
    "DNS",
-   "ExchangeOnPrem"
+   "ExchangeOnPrem",
+   "NetScaler",
+   "ParallelsRas"
   ],
-  "gives": "Expiring/expired certificates with private keys on servers, enterprise CAs and hosts, CAA records. ExchangeOnPrem: Exchange certificates with expiry and self-signed-bound-to-IIS detection, plus the OAuth (Auth) certificate expiry - the one that silently breaks hybrid free/busy and OWA/ECP sign-in.",
+  "gives": "Expiring/expired certificates with private keys on servers, enterprise CAs and hosts, CAA records. ExchangeOnPrem: Exchange certificates with expiry and self-signed-bound-to-IIS detection, plus the OAuth (Auth) certificate expiry - the one that silently breaks hybrid free/busy and OWA/ECP sign-in. NetScaler: appliance certificates with days to expiry and SHA-1 signatures. ParallelsRas: RAS gateway certificates with expiry.",
   "manual": "pkiview.msc / certutil -URL for CRL/AIA health; GeoCerts inventory; ACME automation plan.",
   "e8": [],
   "tag": "Value-add",
@@ -967,10 +971,12 @@
   "auto": "Full",
   "collectors": [
    "AD",
-   "Servers"
+   "Servers",
+   "Dhcp",
+   "Nps"
   ],
-  "gives": "DNS scavenging/aging/forwarders, DHCP scopes utilisation/failover, PDC and member-server time sources.",
-  "manual": "-",
+  "gives": "DNS scavenging/aging/forwarders and PDC/member-server time sources (AD, Servers). Dhcp: authorised servers and reachability, scope utilisation and failover relationships, lease durations, option hygiene (DNS/router/domain/NTP incl. public resolvers handed to clients), dynamic DNS registration credential and name protection, audit logging, database backup path and interval, conflict detection. Nps: RADIUS service presence, state and whether there is a second one.",
+  "manual": "DHCP served by a firewall or appliance rather than Windows is not covered - read it from that device.",
   "e8": [],
   "tag": "BAU",
   "why": "Quiet services that cause loud outages (Kerberos time skew, scope exhaustion).",
@@ -980,19 +986,19 @@
   "id": "SRV-12",
   "dom": "SRV",
   "domain": "Servers & Virtualisation",
-  "control": "Print, RDS/Citrix/RAS and legacy services: print server hardening (Point and Print), RDS/VDI farm health and CAL licensing, legacy runtimes (.NET, Java) on supported versions",
+  "control": "Print, RDS and legacy services: print server hardening (Point and Print), RDS host and CAL licensing, legacy runtimes (.NET, Java) on supported versions",
   "auto": "Full",
   "collectors": [
    "Servers",
    "AD"
   ],
   "gives": "Print servers and Point-and-Print restriction, spooler on non-print servers, RDS hosts, IIS, .NET below 4.8.",
-  "manual": "RDS CAL counts (RD Licensing Manager); RAS/Citrix farm versions.",
+  "manual": "RDS CAL counts and licensing mode (RD Licensing Manager). Citrix, Parallels RAS and the published-application platform as a whole are covered by SRV-14.",
   "e8": [
    "PA"
   ],
   "tag": "Value-add",
-  "why": "Print spooler and remote-desktop farms are recurring CVE targets and licence-compliance traps.",
+  "why": "Print spooler and remote-desktop hosts are recurring CVE targets and licence-compliance traps.",
   "target": "Hardened, licensed, supported."
  },
  {
@@ -1012,15 +1018,38 @@
   "target": "All Linux hosts supported, patched, monitored, backed up."
  },
  {
+  "id": "SRV-14",
+  "dom": "SRV",
+  "domain": "Servers & Virtualisation",
+  "control": "Published application and VDI platform (Citrix CVAD / Parallels RAS / RDS): farm version in support, broker and gateway redundancy, session host and VDA health, licensing model and entitlement headroom, gateway exposure and MFA",
+  "auto": "Full",
+  "collectors": [
+   "Citrix",
+   "ParallelsRas",
+   "NetScaler",
+   "Servers"
+  ],
+  "gives": "Citrix: site name and controller version placed on the LTSR/CR lifecycle table, Local Host Cache, machine catalogs and delivery groups (maintenance mode, unregistered machines), VDA registration state and version spread with last-deregistration reasons, licence server, edition, model and concurrent usage, session and Workspace-app version mix, site database connection. ParallelsRas: farm and site layout, RAS version against the Parallels lifecycle table, publishing agent and secure gateway counts and health, HALB, RD session host agent state and NeedsUpdate, MFA providers and SAML identity providers, licence type and concurrent-user headroom, published items and full desktops. NetScaler: the Citrix Gateway vServers fronting the farm, what authentication is bound to each, and ICA-only mode.",
+  "manual": "RDS CAL counts and licensing mode (RD Licensing Manager); StoreFront configuration and beacon setup; Citrix DaaS (Citrix Cloud) tenants, which need a Citrix Cloud API client and are not covered by this toolkit; profile management (FSLogix / Citrix UPM) health and container sizing; the session-host image build and update process; STA server list on the gateway.",
+  "e8": [
+   "PA",
+   "MFA"
+  ],
+  "tag": "Value-add",
+  "why": "The entire user population reaches its applications through this platform, so a single broker, an expired gateway certificate or an out-of-support farm version is a total outage rather than a degraded service - and the session hosts are usually excluded from endpoint tooling because they are filed as servers.",
+  "target": "Farm version in support; publishing agent/controller and gateway both redundant; MFA on every published gateway; session hosts inside the patching, EDR and application-control coverage counts; licence entitlement, headroom and renewal date known."
+ },
+ {
   "id": "NET-01",
   "dom": "NET",
   "domain": "Network & Firewall",
   "control": "Network documentation current: L3 diagram (< 12 months), VLAN/IP schema in Netbox, WAN/ISP circuits and carrier contacts recorded",
   "auto": "Partial",
   "collectors": [
-   "AD"
+   "AD",
+   "Dhcp"
   ],
-  "gives": "AD sites and subnet count for comparison with the diagram.",
+  "gives": "AD sites and subnet count for comparison with the diagram. Dhcp: every DHCP-served subnet with its range, name and reservation count - the closest thing to evidence of the live IP schema, and usually more current than the diagram.",
   "manual": "SharePoint diagram revision date; Netbox prefixes vs live config; circuit register.",
   "e8": [],
   "tag": "BAU",
@@ -1034,10 +1063,11 @@
   "control": "Firewall platform: model in support, FortiOS on a recommended mature branch (per PSIRT), HA pair, config backed up in FortiManager, management not internet-exposed, individual admin accounts, MFA",
   "auto": "Full",
   "collectors": [
-   "FortiGate"
+   "FortiGate",
+   "NetScaler"
   ],
-  "gives": "Model/serial/firmware, newer patches in branch, HA mode/peers, admin trusted hosts and 2FA, management on WAN, admin port/timeout, FortiAnalyzer/syslog, licences.",
-  "manual": "PSIRT comparison for the running build; FortiManager config backup status; model end-of-support (Fortinet product life cycle).",
+  "gives": "Model/serial/firmware, newer patches in branch, HA mode/peers, admin trusted hosts and 2FA, management on WAN, admin port/timeout, FortiAnalyzer/syslog, licences. NetScaler: firmware branch against the 7-year release cycle with end-of-maintenance and end-of-life dates, HA node state and sync, management IPs with GUI/SSH/Telnet exposed and unrestricted, local system users and nsroot presence, NTP and syslog targets.",
+  "manual": "PSIRT comparison for the running build; FortiManager config backup status; model end-of-support (Fortinet product life cycle). NetScaler: Citrix security bulletins for the running build.",
   "e8": [
    "PO"
   ],
@@ -1070,9 +1100,10 @@
   "collectors": [
    "FortiGate",
    "Azure",
-   "Servers"
+   "Servers",
+   "NetScaler"
   ],
-  "gives": "WAN-sourced accept policies and risky published services, Azure NSG exposure and public IPs, internal listeners.",
+  "gives": "WAN-sourced accept policies and risky published services, Azure NSG exposure and public IPs, internal listeners. NetScaler: TLS protocol versions still enabled per SSL vServer (SSLv2/v3, TLS 1.0/1.1), HSTS, and load-balanced vServers that are administratively up but effectively down.",
   "manual": "External scan of all public IPs (Rapid7 InsightVM external / LionGard / Shodan).",
   "e8": [
    "PO"
@@ -1088,9 +1119,12 @@
   "control": "Remote access: VPN/ZTNA requires MFA (SAML/Entra), device posture checks, split-tunnel policy documented, contractor access segregated and time-bound",
   "auto": "Full",
   "collectors": [
-   "FortiGate"
+   "FortiGate",
+   "Nps",
+   "NetScaler",
+   "ParallelsRas"
   ],
-  "gives": "SSL-VPN state/port, IPsec dial-up and site-to-site, SAML/LDAP/RADIUS sources, local users and FortiToken 2FA.",
+  "gives": "SSL-VPN state/port, IPsec dial-up and site-to-site, SAML/LDAP/RADIUS sources, local users and FortiToken 2FA. Nps: VPN-shaped network policies and whether the Entra MFA NPS extension is installed on every NPS server rather than just one. NetScaler: Citrix Gateway vServers and the authentication bound to each - SAML, RADIUS or LDAP-only. ParallelsRas: RAS MFA providers, criteria and SAML identity providers.",
   "manual": "Entra enterprise app claims for VPN SAML; contractor group membership/expiry.",
   "e8": [
    "MFA"
@@ -1120,10 +1154,12 @@
   "dom": "NET",
   "domain": "Network & Firewall",
   "control": "Switching and wireless: firmware currency, loop protection, uplink redundancy, PoE budget, WPA2/3-Enterprise with 802.1X (no corporate PSK), controller/cloud licence expiry",
-  "auto": "None",
-  "collectors": [],
-  "gives": "-",
-  "manual": "Meraki dashboard / Aruba Central / FortiSwitch: firmware vs recommended, licence expiry, corporate SSID authentication (802.1X vs PSK), STP/loop protection.",
+  "auto": "Partial",
+  "collectors": [
+   "Nps"
+  ],
+  "gives": "Nps: wireless (IEEE 802.11) network policies on NPS, which evidence 802.1X for corporate Wi-Fi rather than a shared PSK.",
+  "manual": "Meraki dashboard / Aruba Central / FortiSwitch: firmware vs recommended, licence expiry, the SSID-to-policy binding and any parallel PSK SSID, STP/loop protection.",
   "e8": [
    "PO"
   ],
@@ -1184,10 +1220,12 @@
   "dom": "NET",
   "domain": "Network & Firewall",
   "control": "Network access control: 802.1X/MAB or port security on wired, rogue device detection, DHCP snooping/dynamic ARP inspection where supported",
-  "auto": "None",
-  "collectors": [],
-  "gives": "-",
-  "manual": "Switch configs (802.1X/MAB, port security, unused ports disabled); NAC console (FortiNAC/Meraki/ClearPass).",
+  "auto": "Partial",
+  "collectors": [
+   "Nps"
+  ],
+  "gives": "Nps: RADIUS clients with their addresses and whether Message-Authenticator is required, shared-secret length (never the value), wired/Ethernet network policies, the authentication methods the policy set allows (EAP-TLS / PEAP / MS-CHAPv2 / PAP), and enabled policies with no group condition.",
+  "manual": "Switch configs (which ports actually enforce 802.1X/MAB, port security, unused ports disabled); NAC console (FortiNAC/Meraki/ClearPass); client-side certificate validation for PEAP, which the server cannot prove.",
   "e8": [],
   "tag": "Billable",
   "why": "Anyone who can plug in should not get the server VLAN.",
@@ -1751,9 +1789,10 @@
    "Endpoints",
    "Servers",
    "Intune",
-   "FortiGate"
+   "FortiGate",
+   "Nps"
   ],
-  "gives": "Remote-access tools installed/running per host, Intune-detected remote tools, VPN local users.",
+  "gives": "Remote-access tools installed/running per host, Intune-detected remote tools, VPN local users. Nps: the RADIUS client list - every device permitted to ask NPS to authenticate a user - and whether NPS accounting is on, which is the only record of who got onto the network from where.",
   "manual": "Vendor access register; firewall logs for vendor sessions.",
   "e8": [
    "AC",
@@ -2075,7 +2114,10 @@
    "vSphere",
    "Veeam",
    "FortiGate",
-   "ExchangeOnPrem"
+   "ExchangeOnPrem",
+   "Citrix",
+   "NetScaler",
+   "ParallelsRas"
   ],
   "gives": "OS/SQL/Exchange/vSphere/Veeam/FortiOS versions with support status and EoS dates where known. ExchangeOnPrem: Exchange version and end-of-support date per server for the lifecycle register.",
   "manual": "Consolidate into the register; vendor lifecycle pages for network gear and LoB apps.",
@@ -2097,10 +2139,12 @@
    "FortiGate",
    "vSphere",
    "Veeam",
-   "Entra"
+   "Entra",
+   "Citrix",
+   "ParallelsRas"
   ],
-  "gives": "FortiGuard/FortiCare, vSphere and Veeam licence expiry; M365 SKU list.",
-  "manual": "eFO annuity (NCE anniversaries), Meraki/Aruba Central, EDR/Huntress/Rapid7/Mimecast terms, GeoCerts, TPP.",
+  "gives": "FortiGuard/FortiCare, vSphere and Veeam licence expiry; M365 SKU list. Citrix: licence inventory with counts in use, expiry and Subscription Advantage / Customer Success Services date. ParallelsRas: licence type, status, expiry and concurrent-user headroom.",
+  "manual": "eFO annuity (NCE anniversaries), Meraki/Aruba Central, EDR/Huntress/Rapid7/Mimecast terms, GeoCerts, TPP. NetScaler subscription (Advanced/Premium) expiry is not read over NITRO - take it from the appliance's licence page. Citrix on-premises file-based licensing reached end of life on 15 Apr 2026 - confirm the client has moved to the License Activation Service.",
   "e8": [],
   "tag": "BAU",
   "why": "Lapsed FortiGuard or Central licences silently disable security features; NCE terms lock pricing.",

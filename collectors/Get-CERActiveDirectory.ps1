@@ -234,11 +234,14 @@ Invoke-CERSection -Collector $C -Section 'GroupPolicy' -Script {
     }
 }
 
-# ---------------- DNS / DHCP / time
-Invoke-CERSection -Collector $C -Section 'DnsDhcpTime' -Script {
+# ---------------- DNS / time
+# DHCP moved out to collectors\Get-CERDhcp.ps1 in v1.2 - it now covers options, the DNS registration
+# credential, audit logging and the database backup as well as scope utilisation and failover, which is
+# more than belongs inside the AD collector. Run -Scope DHCP (it is part of OnPrem) for the other half
+# of SRV-11; this section no longer reports on DHCP at all.
+Invoke-CERSection -Collector $C -Section 'DnsTime' -Script {
     $pdc = $script:domain.PDCEmulator
     $dnsOk = Get-Module -ListAvailable DnsServer
-    $dhcpOk = Get-Module -ListAvailable DhcpServer
     $dns = [ordered]@{}
     if ($dnsOk) {
         Import-Module DnsServer
@@ -257,25 +260,6 @@ Invoke-CERSection -Collector $C -Section 'DnsDhcpTime' -Script {
         $act = if ($f6.Count) { (($f6 -join '. ') + '.') } else { '' }
         Add-CEREvidence -Control 'SRV-11' -Flag $flag -Action $act -Evidence ("DNS ({0}): scavenging {1} (interval {2}, last {3}); aging enabled on {4}/{5} primary zones; forwarders: {6}{7}." -f $pdc, $(if ($sc.ScavengingState) { 'enabled' } else { 'DISABLED' }), $dns.ScavengingInterval, $sc.LastScavengeTime, @($aging | Where-Object AgingEnabled).Count, $aging.Count, (Join-CERList $dns.Forwarders), $(if ($publicFwd.Count) { ' (public resolvers - consider ISP/DNS-filtering design)' } else { '' }))
     } else { Add-CEREvidence -Control 'SRV-11' -Flag Unknown -Action 'Re-run this collector on a DC, or install the RSAT DNS Server Tools feature on the jump host, so DNS scavenging, aging and forwarders can be read. Until then SRV-11 is unevidenced rather than compliant.' -Evidence 'DnsServer module not available on this host - run on a DC or install RSAT DNS tools.' }
-    $dhcp = @()
-    if ($dhcpOk) {
-        Import-Module DhcpServer
-        $servers = @(Get-DhcpServerInDC -ErrorAction SilentlyContinue)
-        foreach ($s in $servers) {
-            try {
-                $scopes = @(Get-DhcpServerv4Scope -ComputerName $s.DnsName -ErrorAction Stop)
-                $stats = @(Get-DhcpServerv4ScopeStatistics -ComputerName $s.DnsName -ErrorAction SilentlyContinue)
-                $fo = @(Get-DhcpServerv4Failover -ComputerName $s.DnsName -ErrorAction SilentlyContinue)
-                foreach ($sc2 in $scopes) { $st = $stats | Where-Object { $_.ScopeId -eq $sc2.ScopeId }; $dhcp += [pscustomobject]@{ Server = $s.DnsName; Scope = "$($sc2.ScopeId)"; Name = $sc2.Name; State = "$($sc2.State)"; PercentInUse = $(if ($st) { [math]::Round($st.PercentageInUse, 1) } else { $null }); Failover = [bool]($fo | Where-Object { $_.ScopeId -contains $sc2.ScopeId }); LeaseDuration = "$($sc2.LeaseDuration)" } }
-            } catch { $dhcp += [pscustomobject]@{ Server = $s.DnsName; Scope = 'n/a'; Name = "unreachable: $($_.Exception.Message)"; State = ''; PercentInUse = $null; Failover = $null; LeaseDuration = '' } }
-        }
-        $hot = @($dhcp | Where-Object { $_.PercentInUse -ge 80 }); $noFo = @($dhcp | Where-Object { $_.State -eq 'Active' -and -not $_.Failover })
-        $f7 = @()
-        if ($hot.Count) { $f7 += "Extend or re-scope the DHCP range(s) above 80% utilisation - $(Join-CERList ($hot | ForEach-Object { '{0} at {1}%' -f $_.Scope, $_.PercentInUse }) 4). Scope exhaustion presents as random devices failing to get an address, usually on the busiest morning of the month" }
-        if ($noFo.Count) { $f7 += "Configure DHCP failover for the $($noFo.Count) active scope(s) without it (load-balance mode between two DHCP servers). A single DHCP server is a site-wide outage waiting for a reboot" }
-        $act = if ($f7.Count) { (($f7 -join '. ') + '.') } else { '' }
-        Add-CEREvidence -Control 'SRV-11' -Flag $(if ($hot.Count -or ($noFo.Count -and $dhcp.Count)) { 'Attention' } else { 'OK' }) -Action $act -Evidence ("DHCP: {0} authorised servers, {1} scopes; {2} scopes >= 80% used ({3}); {4} active scopes without failover." -f $servers.Count, $dhcp.Count, $hot.Count, (Join-CERList ($hot | ForEach-Object { "{0} {1}%" -f $_.Scope, $_.PercentInUse })), $noFo.Count)
-    }
     $time = $null
     try { $time = Invoke-Command -ComputerName $pdc -ScriptBlock { [ordered]@{ Source = (w32tm /query /source); Status = (w32tm /query /status | Out-String); Type = ((w32tm /query /configuration | Select-String '^\s*Type:\s*(\S+)').Matches.Groups[1].Value) } } -ErrorAction Stop }
     catch { try { if ($env:COMPUTERNAME -ieq ($pdc -split '\.')[0]) { $time = [ordered]@{ Source = (w32tm /query /source); Status = (w32tm /query /status | Out-String); Type = ((w32tm /query /configuration | Select-String '^\s*Type:\s*(\S+)').Matches.Groups[1].Value) } } } catch { } }
@@ -284,7 +268,12 @@ Invoke-CERSection -Collector $C -Section 'DnsDhcpTime' -Script {
         $act = if ($flag -eq 'Attention') { "Point the PDC emulator ($pdc) at an external NTP source and stop the hypervisor syncing its clock (w32tm /config /manualpeerlist:'<ntp> 0x8' /syncfromflags:MANUAL /reliable:YES /update, then disable time sync in the VM's integration services). It is currently taking time from '$($time.Source)', so the whole domain's clock drifts with one virtual machine. Kerberos rejects tickets more than five minutes out, so this surfaces as sporadic, unexplained authentication failures." } else { '' }
         Add-CEREvidence -Control 'SRV-11' -Flag $flag -Action $act -Evidence ("PDC emulator {0} time source: {1} (type {2}). Target: external NTP stratum on the PDC, domain hierarchy elsewhere; VM hosts must not overwrite." -f $pdc, $time.Source, $time.Type)
     } else { Add-CEREvidence -Control 'SRV-11' -Flag Unknown -Action ("Run 'w32tm /query /source' and 'w32tm /query /status' on {0} by hand, or open WinRM from the jump host, and record the result. Time is a silent dependency for Kerberos - it is worth confirming rather than assuming." -f $pdc) -Evidence ("Could not query time source on PDC {0} (WinRM). Run 'w32tm /query /source' there." -f $pdc) }
-    Save-CERRaw -Name 'dnsdhcptime' -Object ([ordered]@{ Dns = $dns; Dhcp = $dhcp; Time = $time })
+    Save-CERRaw -Name 'dnstime' -Object ([ordered]@{ Dns = $dns; Time = $time })
+    # Say out loud that the DHCP half of SRV-11 comes from somewhere else now, so a standalone AD run does not
+    # read as "DHCP is fine" when it simply was not looked at.
+    if (-not (Get-CERRaw -Collector 'Dhcp' -Name 'scopes')) {
+        Add-CEREvidence -Control 'SRV-11' -Flag Info -Action 'Run the DHCP collector (-Scope DHCP, or it comes with -Scope OnPrem) to cover scope utilisation, failover, option hygiene, the DNS registration credential, audit logging and the database backup. Without it the DHCP half of this control is unevidenced.' -Evidence 'DHCP evidence comes from the Dhcp collector, which has not run into this run folder. The AD collector covers DNS and time only.'
+    }
 }
 
 # ---------------- Discovery from AD: Exchange, CAs, SQL (SPN), print servers, sites

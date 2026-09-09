@@ -9,12 +9,12 @@ Client Environment Review (CER) methodology.
 |---|---|
 | `Invoke-CERDiscovery.ps1` | Orchestrator — entry point, `-Scope` selects which collectors run |
 | `lib/` | Shared evidence/coverage/logging model (`CER.Common.ps1`, `CER.HostEvidence.ps1`) |
-| `collectors/` | One script per data source (Entra, Intune, Exchange Online, DNS, Teams, Azure, AD, on-prem/hybrid Exchange, Windows Servers, vSphere, Veeam, FortiGate) |
+| `collectors/` | One script per data source (Entra, Intune, Exchange Online, DNS, Teams, Azure, AD, DHCP, NPS, on-prem/hybrid Exchange, Windows Servers, vSphere, Veeam, FortiGate, NetScaler, Citrix, Parallels RAS) |
 | `agent/` | Standalone host-level local check, deployable via RMM (no dependency on `lib/`) |
 | `build/` | `New-CEREvidencePack.ps1` — merges all collector output into the evidence pack |
 | `mapping/controls-map.json` | Control-by-control automation coverage (auto/partial/manual, and where to find manual data) |
 | `samples/hosts/` | Synthetic fixtures — try the host-evidence pipeline with zero live access |
-| `deliverables/` | The Client Environment Review workbook (v1.1) and the two Word deliverables (Method & Report Template, Tool Coverage Matrix) this toolkit feeds |
+| `deliverables/` | The Client Environment Review workbook (v1.2) and the two Word deliverables (Method & Report Template v1.1, Tool Coverage Matrix v1.1) this toolkit feeds |
 
 ## Read-only, by design
 
@@ -40,25 +40,31 @@ Output lands in `output/<client>/<run-id>/` — `evidence.csv`, `AutoEvidence.cs
 
 ---
 
-# CER-Discovery v1.1
+# CER-Discovery v1.2
 
-Scripted evidence collection for the **Client Environment Review** (124 controls, 11 domains). It pulls what admin
-access can reach — Entra/M365, Intune, Exchange Online/Purview, public DNS, Azure, on-prem AD, on-prem/hybrid Exchange,
-Windows servers over WinRM, every endpoint via an RMM-deployed local check, and optionally vSphere, Veeam and FortiGate —
-and writes one evidence pack per client run. It **does not score**: it tells you what it saw (with counts and names),
-flags what needs attention, and says plainly which controls it could not cover and where that data lives.
+Scripted evidence collection for the **Client Environment Review** (125 controls, 11 domains). It pulls what admin
+access can reach — Entra/M365, Intune, Exchange Online/Purview, public DNS, Azure, on-prem AD, DHCP, NPS/RADIUS,
+on-prem/hybrid Exchange, Windows servers over WinRM, every endpoint via an RMM-deployed local check, and optionally
+vSphere, Veeam, FortiGate, NetScaler, Citrix CVAD and Parallels RAS — and writes one evidence pack per client run.
+It **does not score**: it tells you what it saw (with counts and names), flags what needs attention, and says plainly
+which controls it could not cover and where that data lives.
 
-Coverage at v1.1: **60 controls fully automated, 35 partly, 29 manual** (see `Client-Environment-Review-Tool-Coverage-Matrix-v1.0.docx`
+Coverage at v1.2: **61 controls fully automated, 37 partly, 27 manual** (see `Client-Environment-Review-Tool-Coverage-Matrix-v1.1.docx`
 or `mapping/controls-map.json`). Everything it finds is *input* to the workbook; you still decide the score.
-v1.1 adds the `ExchangeOnPrem` collector against the existing control set — no control IDs changed, so the workbook
-and both Word deliverables are unaffected.
+
+v1.2 adds five collectors — `Dhcp`, `Nps`, `Citrix`, `NetScaler`, `ParallelsRas` — and **one new control, SRV-14**
+(published application / VDI platform), so the workbook goes to v1.2 and both Word deliverables to v1.1. The other
+four collectors report against existing control IDs. Two controls that were fully manual are now partly automated on
+the back of the NPS collector: **NET-07** (802.1X for corporate Wi-Fi rather than a shared PSK) and **NET-11**
+(network access control).
 
 ```
 CER-Discovery/
   Invoke-CERDiscovery.ps1          orchestrator (runs collectors, then builds the pack)
   collectors/  Get-CEREntra.ps1 · Get-CERIntune.ps1 · Get-CERExchangeOnline.ps1 · Get-CERDns.ps1 · Get-CERTeams.ps1 · Get-CERAzure.ps1
-               Get-CERActiveDirectory.ps1 · Get-CERExchangeHybrid.ps1 · Get-CERWindowsServers.ps1 · Get-CERvSphere.ps1
-               Get-CERVeeam.ps1 · Get-CERFortiGate.ps1
+               Get-CERActiveDirectory.ps1 · Get-CERDhcp.ps1 · Get-CERNps.ps1 · Get-CERExchangeHybrid.ps1
+               Get-CERWindowsServers.ps1 · Get-CERvSphere.ps1 · Get-CERVeeam.ps1 · Get-CERFortiGate.ps1
+               Get-CERNetScaler.ps1 · Get-CERCitrix.ps1 · Get-CERParallelsRas.ps1
   agent/       Invoke-CERLocalHostCheck.ps1 (RMM-deployable, no dependencies) · Import-CERLocalHostResults.ps1
   build/       New-CEREvidencePack.ps1 (evidence.csv, AutoEvidence.csv, coverage.md, summary.html)
   build/       Sync-CERControlText.ps1 (pulls Why it matters / Target state from the workbook into the control map)
@@ -153,6 +159,26 @@ and hand-merged evidence files are covered by the same guard.
 
 Raw output holds real names, UPNs, hostnames and IPs. **Keep it local**; only the sanitised report leaves the machine.
 
+## RADIUS shared secrets and the NPS collector
+
+NPS has no useful `Get-*` surface — the `Nps` module exposes `Export-NpsConfiguration` and `Import-NpsConfiguration`
+and nothing else — so reading the policy set means reading the exported XML. Microsoft documents that **that export
+contains the RADIUS shared secret of every client and every remote RADIUS server group in clear text.**
+
+Left alone that would put every client's RADIUS secret into `raw\*.json`, which is exactly the wrong place for it. So
+`Get-CERNps.ps1`:
+
+* runs the export **and the parse** on the NPS server, inside one `Invoke-Command`, so the file with the secrets in it
+  never crosses the network and never lands on the reviewer's machine;
+* writes the export to that server's own `%TEMP%`, never into the run folder;
+* returns only parsed, redacted objects — a shared secret is reported as **present/absent and by length**, never by
+  value — with a final regex sweep over the returned policy XML before anything leaves the machine;
+* deletes the export in a `finally` block, overwriting it first, whether or not the parse succeeded.
+
+Nothing under `output\` should ever contain a RADIUS secret. **If you extend this collector, keep that true.** The
+secret length is reported because a short secret is the finding — RADIUS still leans on MD5, so a short shared secret
+is crackable offline from captured traffic.
+
 ## Prerequisites
 
 Cloud collectors (run from your bA laptop, Parallels session or a Mac — PowerShell 7 recommended, 5.1 works):
@@ -166,6 +192,15 @@ Install-Module VMware.PowerCLI -Scope CurrentUser       # optional (SRV-06/07) -
 On-prem collectors run on a **domain-joined jump host or DC** (Windows PowerShell 5.1 is fine) with RSAT: ActiveDirectory,
 GroupPolicy, DnsServer, DhcpServer modules. WinRM must reach the servers (it usually does inside the estate; unreachable
 hosts are reported as a finding, not an error). The Veeam collector needs the Veeam console/PowerShell module (run it on the VBR server).
+
+The published-application collectors each need their own vendor tooling, on the box that has it:
+
+| Collector | Needs | Where to run it |
+|---|---|---|
+| `Citrix` | CVAD PowerShell SDK (`Citrix.Broker.*`) | A Delivery Controller, in **Windows PowerShell 5.1** — the SDK is still snapin-based on most releases and `Add-PSSnapin` does not exist in PowerShell 7. Or a jump host with the SDK, using `-AdminAddress` |
+| `ParallelsRas` | `RASAdmin` module (ships with the RAS console) | The Parallels RAS connection broker, or any machine with the console using `-Server` |
+| `NetScaler` | HTTPS to the NSIP and a **read-only** NetScaler account (command policy `read-only`, not nsroot) | Anywhere that can reach the appliance |
+| `NPS` | The `Nps` module (present with the NPS role) | The NPS server itself, or any domain-joined host using `-NpsServer` (the export and parse run remotely, over one `Invoke-Command`) |
 
 The **ExchangeOnPrem** collector needs the Exchange Management Shell. Either run it on the Exchange server itself from EMS
 (simplest, and the only way to read the true build number from `ExSetup.exe` — `Get-ExchangeServer` shows the cumulative
@@ -194,9 +229,10 @@ that can, then re-run.
     -AzureTenantId <bA tenant id for Lighthouse>          # omit if the client has no Azure
 
 # 2. On-prem pass (jump host / DC as domain admin) - same client and run id, any output root
-#    OnPrem = AD + ExchangeOnPrem + Servers
+#    OnPrem = AD + DHCP + NPS + ExchangeOnPrem + Servers
 .\Invoke-CERDiscovery.ps1 -Client C-003 -Scope OnPrem -RunId 20260905-0900 -OutputRoot D:\CER\output -IncludeDomainControllers `
-    -ExchangeServer exch01.contoso.local        # omit if the client has no on-prem Exchange
+    -ExchangeServer exch01.contoso.local `      # omit if the client has no on-prem Exchange
+    -NpsServer nps01,nps02                      # omit to check only the local host for the NPS role
 #    add -IncludeWindowsUpdateSearch for a live Windows Update scan on each server (+30-120 s per host)
 
 # 3. Endpoints via RMM: deploy agent\Invoke-CERLocalHostCheck.ps1 (below), then import the JSON drops
@@ -207,10 +243,15 @@ that can, then re-run.
 .\collectors\Get-CERvSphere.ps1   -Client C-003 -RunId 20260905-0900 -VCenter vcsa01 -Credential (Get-Credential)
 .\collectors\Get-CERFortiGate.ps1 -Client C-003 -RunId 20260905-0900 -FortiGate 10.0.0.1 -ApiToken (Read-Host -AsSecureString) -SkipCertificateCheck
 
-# 5. Copy the on-prem run folder into the laptop's output\C-003\20260905-0900\ (merge) and rebuild the pack
+# 5. Published-application platform - whichever one the client runs
+.\collectors\Get-CERParallelsRas.ps1 -Client C-003 -RunId 20260905-0900 -Server ras01.contoso.local
+.\collectors\Get-CERCitrix.ps1       -Client C-003 -RunId 20260905-0900      # on a Delivery Controller, Windows PowerShell 5.1
+.\collectors\Get-CERNetScaler.ps1    -Client C-003 -RunId 20260905-0900 -NetScaler 10.0.0.5 -Credential (Get-Credential) -SkipCertificateCheck
+
+# 6. Copy the on-prem run folder into the laptop's output\C-003\20260905-0900\ (merge) and rebuild the pack
 .\build\New-CEREvidencePack.ps1 -Client C-003 -RunId 20260905-0900
 
-# 6. Workbook: open output\C-003\20260905-0900\AutoEvidence.csv, copy rows, paste into the AutoEvidence tab from A2.
+# 7. Workbook: open output\C-003\20260905-0900\AutoEvidence.csv, copy rows, paste into the AutoEvidence tab from A2.
 ```
 
 Try it without any access first: `.\Invoke-CERDiscovery.ps1 -Client DEMO -Scope Endpoints -LocalCheckPath .\samples\hosts` imports four
@@ -242,7 +283,12 @@ The same function runs over WinRM for servers, so results are identical either w
 | DNS | M365-02, NET-10, M365-05 | No credentials. SPF (incl. malformed multi-string records), DKIM selectors, DMARC, CAA, DNSSEC, MTA-STS, autodiscover |
 | Teams | M365-07 | Optional module |
 | Azure | AZ-01..07, BDR-01, SRV-02/03, NET-04, LIC-04 | Resource Graph for inventory/security/backup/cost; REST for budgets, Defender plans, diagnostics, 6-month cost |
-| AD | IAM-01/05/09/10/11, SRV-02/05/09/10/11/12, END-02/08, M365-05, BDR-06, SEC-08, DOC-06, NET-01 | Run on DC/jump host. Also queries each DC over WinRM for SMBv1/LDAP signing/channel binding (skip with `-SkipDcRemote`) |
+| AD | IAM-01/05/09/10/11, SRV-02/05/09/10/11/12, END-02/08, M365-05, BDR-06, SEC-08, DOC-06, NET-01 | Run on DC/jump host. Also queries each DC over WinRM for SMBv1/LDAP signing/channel binding (skip with `-SkipDcRemote`). DHCP moved out to its own collector in v1.2 |
+| DHCP | SRV-11, NET-01 | RSAT `DhcpServer`. Authorised servers, scope utilisation and failover, lease durations, option hygiene (incl. public resolvers handed to clients), the DNS registration credential, name protection, audit logging, database backup, conflict detection |
+| NPS | NET-05/07/11, SEC-12, SRV-11 | **Beta.** RADIUS clients, connection request and network policies, the authentication methods actually allowed, accounting, and the Entra MFA extension. Reads config via `Export-NpsConfiguration` **on the NPS server** and redacts every shared secret before anything is persisted — see below |
+| NetScaler | NET-02/04/05, SRV-10, SRV-14, LIC-02/03 | Optional, **beta**: NITRO REST with a read-only account. Firmware against the 7-year lifecycle, HA, Gateway vServers and their authentication, TLS posture, certificate expiry, management exposure |
+| Citrix | SRV-14, SRV-02, LIC-02/03 | Optional, **beta**: CVAD on-prem via the broker SDK on a Delivery Controller, **Windows PowerShell 5.1**. Site/controller version on the LTSR/CR lifecycle table, catalogs and delivery groups, VDA registration and version spread, licensing model. Citrix DaaS (Cloud) is not covered |
+| ParallelsRas | SRV-14, SRV-02, NET-05, LIC-02/03 | Optional, **beta**: `RASAdmin` module on the RAS broker. Farm/site layout, version against the Parallels lifecycle table, publishing agent and gateway redundancy, session host agent health, MFA and SAML, licence headroom, published items |
 | ExchangeOnPrem | M365-02/03/04/05, IAM-01/04, SRV-02/03/04/09/10, BDR-06, LIC-02 | **Beta.** Exchange Management Shell, on the server or via `-ExchangeServer`. Builds and SU currency, hybrid + OAuth certificate, connectors and anonymous relay, virtual directory exposure and Basic auth, Extended Protection and TLS, databases and backup dates, on-prem mailbox residual |
 | Servers | SRV-*, END-* (servers), COV-02/04/05, SEC-02/03/12, IAM-10 (DCs) | WinRM fan-out of the host check; unreachable hosts listed |
 | Endpoints | END-*, SEC-02/03/12, COV-04/05, BDR-07, END-16 | Import of RMM host-check JSON |
@@ -250,10 +296,12 @@ The same function runs over WinRM for servers, so results are identical either w
 | Veeam | BDR-01/02/03/04/05/06/09, SRV-09 | Optional (VBR PowerShell) |
 | FortiGate | NET-02/03/04/05/06/08/09, SEC-12 | Optional, **beta**: REST paths mirror the CLI tree; anything the firmware does not expose is reported as a gap |
 
-Not automated in v1 (all listed with their source in the coverage matrix): BAMS/eFO/PowerBI reconciliation, Orion and
+Not automated (all listed with their source in the coverage matrix): BAMS/eFO/PowerBI reconciliation, Orion and
 N-central console data, Huntress/Rapid7/Airlock/Mimecast/LionGard consoles, SNOW CIs and ticket trends, documentation
 currency, DR plans and restore-test evidence, contracts/renewals, physical/UPS, insurance, roadmap. Linux hosts are not
-covered by the host check.
+covered by the host check. Citrix DaaS (Citrix Cloud) is not covered — the control plane is cloud-hosted and needs a
+Citrix Cloud API client against a different API, so a DaaS client leaves SRV-14 manual. RDS CAL counts still come from
+RD Licensing Manager.
 
 ## Reading the results
 
@@ -285,6 +333,26 @@ covered by the host check.
   policy, a WAF, or the Hybrid Agent. The collector reports the published URL and says so; confirm actual exposure.
 * Veeam immutability is read by property discovery (`*mmutab*`) because property names differ across versions.
 * No throttling back-off beyond what the SDKs do; on 429s re-run the collector (it overwrites its own files only).
+* **NPS is beta.** The exported configuration schema differs between Windows Server versions, so the collector walks it
+  by element and property *name* rather than by a fixed path. If a section comes back empty on a given server, compare
+  it against `netsh nps show config` before concluding the setting is absent.
+* NPS proves a network policy exists; it cannot prove any switch port actually enforces 802.1X, nor that clients
+  validate the NPS server certificate for PEAP — both are the client and switch side of the same control (NET-11).
+* **Citrix is beta** and CVAD on-prem only. The broker SDK is snapin-based on most releases, so it needs Windows
+  PowerShell 5.1; property names for the site version have moved between releases and are read by trying several in
+  turn. Citrix DaaS is out of scope.
+* **NetScaler is beta** on the same basis as FortiGate: the `/nitro/v1/config/` base, the login object and
+  `lbvserver`/`sslvserver`/`sslcertkey`/`vpnvserver` are confirmed from Citrix developer documentation; the rest is
+  derived from the CLI tree and may differ between firmware branches.
+* Parallels RAS cmdlet coverage varies across RAS 18-21, so every call beyond `New-RASSession`, `Get-RASVersion` and
+  `Get-RASSite` is guarded by `Get-Command` and degrades to a recorded coverage gap.
+* The three new lifecycle tables in `lib/CER.Common.ps1` (`$script:CERRasLifecycle`, `$script:CERCitrixLifecycle`,
+  `$script:CERNetScalerLifecycle`) are point-in-time copies verified 8 Sep 2026, exactly like the Exchange one. A stale
+  table under-reports an out-of-support farm, which is the whole point of the check — two dates in them land inside the
+  next year (**NetScaler 13.1 end of maintenance 15 Sep 2026** and **CVAD 2203 LTSR end of life 23 Mar 2027**), so
+  refresh them before leaning on the result.
+* The DHCP collector reads Windows DHCP only. Where the firewall or a router serves DHCP, that half of SRV-11 stays
+  manual and the collector says so rather than reporting a clean result.
 
 ## Verified references (5 Sep 2026)
 
@@ -312,7 +380,51 @@ Fortinet docs; FortiGate REST `access_token` / `monitor/firewall/policy hit_coun
   `AuthMechanism ExternalAuthoritative` with `PermissionGroups ExchangeServers`.
 * `Get-HybridConfiguration` — on-premises only.
 
+### Added for v1.2 (8 Sep 2026)
+
+* **Parallels RAS lifecycle** — kb.parallels.com/en/123002 (last reviewed 27 Feb 2026): LTS versions get 30 months
+  maintenance + 6 months support (36 total), non-LTS 18 + 6. RAS 18 EOM 16 Jun 2023 / EOS 16 Dec 2023; RAS 19 EOM
+  28 Feb 2025 / EOS 28 Jul 2025; RAS 20 EOM 30 Mar 2027 / EOS 30 Oct 2027; RAS 21 EOM 11 May 2028 / EOS 11 Nov 2028.
+  The article states that any version not in its table has already reached both EOM and EOS.
+* **Parallels RAS PowerShell** — `RASAdmin` module, `New-RASSession` before anything else, then `Get-RASVersion`,
+  `Get-RASSite`, `Get-RASRDS`, `Get-RASGateway`, `Get-RASGatewayStatus`, `Get-RASLicenseDetails`, `Get-RASMFA`,
+  `Get-RASMFACriteria`, `Get-RASMFADefaultSettings` (docs.parallels.com RAS PowerShell API guide, v20/v21).
+* **CVAD lifecycle** — Citrix product matrix and endoflife.date/citrix-vad (updated 6 Sep 2026). Current Releases:
+  active support ends 6 months after release, security support at 18 months. LTSR: 5 years active+security, then up to
+  5 more years of **paid** extended support. 2607 LTSR (18 Aug 2026 → 17 Aug 2029), 2507 LTSR (→ 18 Aug 2028, ext 2033),
+  2402 LTSR (→ 15 Apr 2029, ext 2034), **2203 LTSR (→ 23 Mar 2027**, ext 2032), 1912 LTSR ended 18 Dec 2024 (ext 2029),
+  XenDesktop 7.15 LTSR ended 15 Aug 2022 (ext 15 Aug 2027).
+* **Citrix on-premises file-based licensing reached end of life 15 Apr 2026** — the License Activation Service is now
+  the only way to activate or re-license. Minimum LAS-capable NetScaler builds: **14.1-51.x** and **13.1-60.x**.
+* **NetScaler firmware lifecycle** — NetScaler ADC firmware release cycle (support.citrix.com CTX241500): a 7-year
+  cycle applies from 14.1 onward. **13.1 end of maintenance 15 Sep 2026, end of life 15 Sep 2027**; 14.1 end of life
+  8 Aug 2030; 13.0 and earlier are past end of life.
+* **NITRO REST** — `/nitro/v1/config/<object>` and `/nitro/v1/stat/<object>`, session auth via the `login` object
+  (developer-docs.netscaler.com); `lbvserver`, `sslvserver`, `sslcertkey`, `vpnvserver` confirmed from that reference.
+* **CVAD PowerShell SDK** — `Get-BrokerSite`, `Get-BrokerController`, `Get-BrokerCatalog`, `Get-BrokerDesktopGroup`,
+  `Get-BrokerMachine` (which supersedes the deprecated `Get-BrokerDesktop`) — Citrix developer documentation.
+* **NPS** — the `Nps` module provides only `Export-NpsConfiguration` / `Import-NpsConfiguration`, and Microsoft Learn
+  states plainly that the exported file **contains unencrypted shared secrets for RADIUS clients and members of remote
+  RADIUS server groups**; `netsh nps export` requires `exportPSK=YES` for the same reason. This is what drives the
+  redaction design above.
+* **DHCP** — `Get-DhcpServerInDC`, `Get-DhcpServerv4Scope`, `Get-DhcpServerv4ScopeStatistics`, `Get-DhcpServerv4Failover`,
+  `Get-DhcpServerv4OptionValue`, `Get-DhcpServerv4DnsSetting`, `Get-DhcpServerDnsCredential`, `Get-DhcpServerSetting`,
+  `Get-DhcpServerAuditLog`, `Get-DhcpServerDatabase` — Microsoft Learn DhcpServer module reference.
+
 ## Version
+
+1.2 — 8 Sep 2026 — added five collectors: `Dhcp`, `Nps`, `Citrix` (CVAD on-prem, beta), `NetScaler` (NITRO, beta) and
+`ParallelsRas`. Added **one control, SRV-14** (published application / VDI platform), taking the review to 125 controls —
+so the workbook goes to v1.2 and both Word deliverables to v1.1; every other new finding reports against existing
+control IDs. **NET-07** and **NET-11** move from fully manual to partly automated on the back of the NPS collector,
+which is the first evidence the toolkit has produced for 802.1X and network access control. DHCP moved out of the AD
+collector into its own, gaining option hygiene, the DNS registration credential, name protection, audit logging,
+database backup and conflict detection; the AD collector keeps DNS and time and says so when the DHCP collector has not
+run into the same folder. SRV-12 narrows to print, RDS and legacy runtimes now that Citrix and RAS have SRV-14. Three
+new lifecycle tables in `lib/CER.Common.ps1` for Parallels RAS, CVAD and NetScaler, all verified 8 Sep 2026, plus the
+Citrix file-based-licensing end-of-life date (15 Apr 2026) as a finding in its own right. The NPS collector exports and
+parses on the NPS server and redacts every RADIUS shared secret before anything is persisted — see the section above.
+Coverage moves from 60/35/29 to **61 full, 37 partial, 27 manual**.
 
 1.1 — 8 Sep 2026 — added the `ExchangeOnPrem` collector (on-prem / hybrid Exchange) against the existing 124 controls;
 shared `Get-CERExchangeSupport` lifecycle helper; fixed the run-folder fork that let a standalone collector write into a

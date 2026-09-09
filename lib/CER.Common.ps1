@@ -385,6 +385,173 @@ function Get-CERSqlSupport {
     }
 }
 
+# ---------------------------------------------------------------- published-app / VDI platform lifecycle
+# Three vendor tables behind SRV-14. Same contract as Get-CERExchangeSupport: anything that cannot be
+# placed returns Supported = $null, never $true - an unreadable version is a gap in the evidence, not a
+# clean bill of health. Refresh each from the cited source when the currency finding matters.
+
+# Parallels RAS. Verified 08/09/2026 against "Lifecycle announcement for Parallels Remote Application
+# Server" (kb.parallels.com/en/123002, last reviewed 27/02/2026). LTS = 30 months maintenance + 6 months
+# support; non-LTS = 18 + 6. That article states plainly that every version not in its table has already
+# reached both EOM and EOS, so an unlisted major below the lowest known one is out of support, not unknown.
+$script:CERRasBuildsVerified = '08/09/2026'
+$script:CERRasLifecycle = @{
+    21 = @{ Name = 'Parallels RAS 21 (LTS)'; Released = '11 Nov 2025'; Eom = '11 May 2028'; Eos = '11 Nov 2028' }
+    20 = @{ Name = 'Parallels RAS 20 (LTS)'; Released = '30 Oct 2024'; Eom = '30 Mar 2027'; Eos = '30 Oct 2027' }
+    19 = @{ Name = 'Parallels RAS 19 (LTS)'; Released = '28 Jul 2022'; Eom = '28 Feb 2025'; Eos = '28 Jul 2025' }
+    18 = @{ Name = 'Parallels RAS 18 (LTS)'; Released = '16 Dec 2020'; Eom = '16 Jun 2023'; Eos = '16 Dec 2023' }
+}
+function Get-CERRasSupport {
+    <# Accepts any RAS version string - '20.4 (29192)', '19.4.28840', 'Parallels RAS 21'. Only the major matters. #>
+    param([string]$Version)
+    $r = [ordered]@{ Family = $Version; Major = 0; Supported = $null; InMaintenance = $null
+        EndOfMaintenance = ''; EndOfSupport = ''; Released = ''; Note = '' }
+    $m = [regex]::Match("$Version", '\d+')
+    if (-not $m.Success) {
+        $r.Family = 'Parallels RAS (version not recognised)'
+        $r.Note = ("Version string '{0}' not recognised - read it from Get-RASVersion on the connection broker." -f $Version)
+        return [pscustomobject]$r
+    }
+    $maj = [int]$m.Value
+    $r.Major = $maj
+    $known = $script:CERRasLifecycle[$maj]
+    if ($known) {
+        $r.Family = $known.Name; $r.Released = $known.Released
+        $r.EndOfMaintenance = $known.Eom; $r.EndOfSupport = $known.Eos
+        $now = Get-Date
+        try { $r.Supported = ((Get-Date $known.Eos) -ge $now) } catch { $r.Supported = $null }
+        try { $r.InMaintenance = ((Get-Date $known.Eom) -ge $now) } catch { $r.InMaintenance = $null }
+        if ($r.Supported -eq $false) { $r.Note = ('Past end of support ({0}) - no technical support and no fixes. Upgrade to RAS 21 (LTS).' -f $known.Eos) }
+        elseif ($r.InMaintenance -eq $false) { $r.Note = ('In the support-only window: maintenance ended {0}, support ends {1}. No further development iterations, so plan the upgrade inside that window.' -f $known.Eom, $known.Eos) }
+    } elseif ($maj -lt 18) {
+        $r.Family = ("Parallels RAS {0}" -f $maj); $r.Supported = $false
+        $r.EndOfSupport = 'before 16 Dec 2023'
+        $r.Note = 'Older than RAS 18 - past end of maintenance and end of support per the Parallels lifecycle article. Upgrade.'
+    } else {
+        $r.Family = ("Parallels RAS {0}" -f $maj)
+        $r.Note = 'Newer than the versions in this table - refresh it from kb.parallels.com/en/123002.'
+    }
+    return [pscustomobject]$r
+}
+
+# Citrix Virtual Apps and Desktops (on-prem). Verified 08/09/2026 against the Citrix product matrix and
+# endoflife.date/citrix-vad (updated 06/09/2026). CR = end of active support 6 months after release, end of
+# security support at 18 months. LTSR = 5 years active+security, then up to 5 more years of PAID extended
+# support - extended support is a purchase, so it is reported as a note and never as "supported".
+$script:CERCitrixBuildsVerified = '08/09/2026'
+$script:CERCitrixLifecycle = @{
+    '2607' = @{ Ltsr = $true;  Released = '18 Aug 2026'; Eos = '17 Aug 2029'; Extended = '' }
+    '2603' = @{ Ltsr = $false; Released = '30 Apr 2026'; Eos = '30 Oct 2027'; ActiveEnd = '30 Oct 2026'; Extended = '' }
+    '2511' = @{ Ltsr = $false; Released = '29 Dec 2025'; Eos = '29 Jun 2027'; ActiveEnd = '29 Jun 2026'; Extended = '' }
+    '2507' = @{ Ltsr = $true;  Released = '19 Aug 2025'; Eos = '18 Aug 2028'; Extended = '18 Aug 2033' }
+    '2503' = @{ Ltsr = $false; Released = '29 Apr 2025'; Eos = '29 Oct 2026'; ActiveEnd = '29 Oct 2025'; Extended = '' }
+    '2411' = @{ Ltsr = $false; Released = '03 Dec 2024'; Eos = '03 Jun 2026'; ActiveEnd = '03 Jun 2025'; Extended = '' }
+    '2407' = @{ Ltsr = $false; Released = '30 Jul 2024'; Eos = '31 Dec 2025'; ActiveEnd = '31 Dec 2024'; Extended = '' }
+    '2402' = @{ Ltsr = $true;  Released = '14 Apr 2024'; Eos = '15 Apr 2029'; Extended = '15 Apr 2034' }
+    '2203' = @{ Ltsr = $true;  Released = '23 Mar 2022'; Eos = '23 Mar 2027'; Extended = '23 Mar 2032' }
+    '1912' = @{ Ltsr = $true;  Released = '18 Dec 2019'; Eos = '18 Dec 2024'; Extended = '18 Dec 2029' }
+    '7.15' = @{ Ltsr = $true;  Released = '15 Aug 2017'; Eos = '15 Aug 2022'; Extended = '15 Aug 2027' }
+}
+# File-based licensing for on-premises Citrix reached end of life on 15 Apr 2026; the License Activation
+# Service is the only remaining activation path. Minimum LAS-capable NetScaler builds: 14.1-51.x / 13.1-60.x.
+$script:CERCitrixLasCutover = '15 Apr 2026'
+function Get-CERCitrixSupport {
+    <#
+      Accepts a CVAD version as reported by Get-BrokerSite / Get-BrokerController - '2402', '2402.0.0.37',
+      '7.2203', '7.15.4000.653' - and places it on the release table.
+    #>
+    param([string]$Version)
+    $r = [ordered]@{ Family = $Version; Release = ''; Ltsr = $null; Supported = $null; ActiveSupport = $null
+        EndOfSupport = ''; ExtendedSupport = ''; Released = ''; Note = '' }
+    $v = "$Version"
+    $rel = ''
+    $ym = [regex]::Match($v, '(?<![\d.])(1[89]|2[0-9])(0[1-9]|1[0-2])(?![\d])')     # a YYMM release like 2402
+    if ($ym.Success) { $rel = $ym.Value }
+    elseif ($v -match '(?<![\d])7[._ ]15(?![\d])') { $rel = '7.15' }
+    if (-not $rel) {
+        $r.Family = 'Citrix Virtual Apps and Desktops (version not recognised)'
+        $r.Note = ("Version string '{0}' not recognised - read it from (Get-BrokerSite).ControllerVersion on a Delivery Controller and check the Citrix product matrix." -f $Version)
+        return [pscustomobject]$r
+    }
+    $r.Release = $rel
+    $known = $script:CERCitrixLifecycle[$rel]
+    if (-not $known) {
+        $r.Family = ("CVAD {0}" -f $rel)
+        $r.Note = 'Release not in this table - refresh it from the Citrix product matrix (citrix.com/support/product-lifecycle).'
+        return [pscustomobject]$r
+    }
+    $r.Ltsr = $known.Ltsr
+    $r.Released = $known.Released
+    $r.EndOfSupport = $known.Eos
+    $r.ExtendedSupport = $known.Extended
+    if ($rel -eq '7.15') { $r.Family = 'XenApp/XenDesktop 7.15 LTSR' }
+    else { $r.Family = ("CVAD {0}{1}" -f $rel, $(if ($known.Ltsr) { ' LTSR' } else { ' CR' })) }
+    $now = Get-Date
+    try { $r.Supported = ((Get-Date $known.Eos) -ge $now) } catch { $r.Supported = $null }
+    if ($known.ContainsKey('ActiveEnd') -and $known.ActiveEnd) {
+        try { $r.ActiveSupport = ((Get-Date $known.ActiveEnd) -ge $now) } catch { $r.ActiveSupport = $null }
+    } elseif ($known.Ltsr) { $r.ActiveSupport = $r.Supported }
+    $notes = @()
+    if ($r.Supported -eq $false) {
+        if ($known.Extended) { $notes += ('Past end of active and security support ({0}). Only the PAID extended support programme covers it, to {1} - confirm the client actually holds it, otherwise this is unsupported software.' -f $known.Eos, $known.Extended) }
+        else { $notes += ('Past end of security support ({0}) with no extended-support option. Upgrade to a current LTSR.' -f $known.Eos) }
+    } elseif (-not $known.Ltsr) {
+        $notes += ('Current Release, not an LTSR: security support ends {0}, which is 18 months from release. A CR in a managed estate means an upgrade every 18 months - if that is not the intent, move to the nearest LTSR.' -f $known.Eos)
+        if ($r.ActiveSupport -eq $false) { $notes += ('Active support already ended {0}, so no new fixes - only security updates until {1}.' -f $known.ActiveEnd, $known.Eos) }
+    }
+    $r.Note = ($notes -join ' ')
+    return [pscustomobject]$r
+}
+
+# NetScaler (Citrix ADC) firmware. Verified 08/09/2026 against the NetScaler ADC firmware release cycle
+# (support.citrix.com CTX241500) and the Citrix product matrix. From 14.1 the cycle is 7 years.
+$script:CERNetScalerBuildsVerified = '08/09/2026'
+$script:CERNetScalerLifecycle = @{
+    '14.1' = @{ Eom = ''; Eos = '08 Aug 2030'; LasMinBuild = 51 }
+    '13.1' = @{ Eom = '15 Sep 2026'; Eos = '15 Sep 2027'; LasMinBuild = 60 }
+}
+function Get-CERNetScalerSupport {
+    <# Accepts 'NS14.1: Build 34.42.nc' or '13.1-49.15' - anything carrying major.minor and a build number. #>
+    param([string]$Version)
+    $r = [ordered]@{ Family = $Version; Branch = ''; Build = $null; Supported = $null; InMaintenance = $null
+        EndOfMaintenance = ''; EndOfSupport = ''; LasCapable = $null; Note = '' }
+    $b = [regex]::Match("$Version", '(\d+)\.(\d+)')
+    if (-not $b.Success) {
+        $r.Family = 'NetScaler (version not recognised)'
+        $r.Note = ("Version string '{0}' not recognised - read it from 'show ns version' or NITRO config/nsversion." -f $Version)
+        return [pscustomobject]$r
+    }
+    $branch = ('{0}.{1}' -f $b.Groups[1].Value, $b.Groups[2].Value)
+    $r.Branch = $branch
+    $r.Family = ('NetScaler ' + $branch)
+    # build number is the first number AFTER the branch, e.g. 'NS14.1: Build 34.42' -> 34
+    $after = "$Version".Substring($b.Index + $b.Length)
+    $bm = [regex]::Match($after, '\d+')
+    if ($bm.Success) { $r.Build = [int]$bm.Value }
+    $known = $script:CERNetScalerLifecycle[$branch]
+    if ($known) {
+        $r.EndOfMaintenance = $known.Eom; $r.EndOfSupport = $known.Eos
+        $now = Get-Date
+        try { $r.Supported = ((Get-Date $known.Eos) -ge $now) } catch { $r.Supported = $null }
+        if ($known.Eom) { try { $r.InMaintenance = ((Get-Date $known.Eom) -ge $now) } catch { $r.InMaintenance = $null } } else { $r.InMaintenance = $r.Supported }
+        if ($null -ne $r.Build -and $known.LasMinBuild) { $r.LasCapable = ($r.Build -ge $known.LasMinBuild) }
+        $notes = @()
+        if ($r.Supported -eq $false) { $notes += ('Past end of life ({0}) - no firmware fixes, including for PSIRT advisories. Upgrade to 14.1.' -f $known.Eos) }
+        elseif ($r.InMaintenance -eq $false) { $notes += ('Past end of maintenance ({0}); technical support only until end of life {1}. No new builds means unpatched CVEs on an internet-facing appliance.' -f $known.Eom, $known.Eos) }
+        if ($r.LasCapable -eq $false) { $notes += ('Build {0} is below the minimum LAS-capable build for this branch ({1}-{2}.x). File-based licensing reached end of life on {3}, so this appliance cannot be re-licensed until it is upgraded.' -f $r.Build, $branch, $known.LasMinBuild, $script:CERCitrixLasCutover) }
+        $r.Note = ($notes -join ' ')
+    } else {
+        $maj = [int]$b.Groups[1].Value; $min = [int]$b.Groups[2].Value
+        if ($maj -lt 13 -or ($maj -eq 13 -and $min -lt 1)) {
+            $r.Supported = $false
+            $r.Note = 'Branch 13.0 and earlier are past end of life - confirm the exact date on the Citrix product matrix, then upgrade to 14.1. An end-of-life ADC on the internet edge is the highest-value target in the estate.'
+        } else {
+            $r.Note = 'Branch not in this table - refresh it from the NetScaler firmware release cycle article (CTX241500).'
+        }
+    }
+    return [pscustomobject]$r
+}
+
 # Defender ASR rule GUID -> short name (Microsoft Learn, ASR rules reference)
 $script:CERAsrRules = @{
     'd4f940ab-401b-4efc-aadc-ad5f3c50688a' = 'Block Office apps from creating child processes'
